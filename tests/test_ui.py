@@ -9,6 +9,8 @@ import requests
 from netaddr import EUI, IPAddress, IPNetwork, mac_unix_expanded
 from playwright.sync_api import Page, expect
 
+from . import constants
+
 # This is linked from netbox_kea to avoid import errors
 from .kea import KeaClient
 
@@ -299,7 +301,6 @@ def test_dhcp_subnets_configure_table(page: Page, kea: KeaClient, family: int) -
 @pytest.mark.parametrize(
     ("version", "by", "q"),
     (
-        # TODO check eui lengths
         (6, "IP Address", "192.0.2.0"),
         (6, "IP Address", "192.0.2.0/24"),
         (6, "IP Address", "2001:db8::/64"),
@@ -314,6 +315,8 @@ def test_dhcp_subnets_configure_table(page: Page, kea: KeaClient, family: int) -
         (6, "DUID", "foo"),
         (6, "DUID", "192.0.2.0"),
         (6, "DUID", "2001:db8::"),
+        (6, "DUID", "0"),  # Too short
+        (6, "DUID", "00" * (constants.DUID_MAX_OCTETS + 1)),
         (4, "IP Address", "2001:db8::"),
         (4, "IP Address", "2001:db8::/64"),
         (4, "IP Address", "192.0.2.0/24"),
@@ -323,6 +326,8 @@ def test_dhcp_subnets_configure_table(page: Page, kea: KeaClient, family: int) -
         (4, "Client ID", "foo"),
         (4, "Client ID", "192.0.2.0"),
         (4, "Client ID", "2001:db8::"),
+        (4, "Client ID", "0"),
+        (4, "Client ID", "00" * (constants.CLIENT_ID_MAX_OCTETS + 1)),
         (4, "Subnet", "abc"),
         (4, "Subnet", "2001:db8::"),
         (4, "Subnet", "192.0.2.0"),
