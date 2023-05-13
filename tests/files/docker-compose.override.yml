@@ -16,27 +16,25 @@ services:
       LOGLEVEL: DEBUG
       DEBUG: "true"
       DB_WAIT_DEBUG: "1"
-  kea-ctrl-agent: &kea
+  kea-dhcp6: &kea
     build:
       context: .
       dockerfile: Dockerfile-kea
+    command: /usr/sbin/kea-dhcp6 -c /config/kea-dhcp6.conf
+    volumes:
+      - ./kea_configs/:/config/:ro
+      - kea-run:/run/kea/
+  kea-dhcp4:
+    <<: *kea
+    command: /usr/sbin/kea-dhcp4 -c /config/kea-dhcp4.conf
+  kea-ctrl-agent:
+    <<: *kea
     command: /usr/sbin/kea-ctrl-agent -c /config/kea-ctrl-agent.conf
     depends_on:
       - kea-dhcp4
       - kea-dhcp6
-    volumes:
-      - ./kea_configs/:/config/:ro
-      - kea-run:/run/kea/
     ports:
       - 8001:8000
-  kea-dhcp4:
-    <<: *kea
-    command: /usr/sbin/kea-dhcp4 -c /config/kea-dhcp4.conf
-    ports: []
-  kea-dhcp6:
-    <<: *kea
-    command: /usr/sbin/kea-dhcp6 -c /config/kea-dhcp6.conf
-    ports: []
   nginx:
     image: nginx:alpine-slim
     depends_on:
