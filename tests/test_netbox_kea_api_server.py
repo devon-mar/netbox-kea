@@ -120,3 +120,136 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
 def test_api_add_failures(body: Dict[str, Any], nb_api: pynetbox.api):
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(**body)
+
+
+def test_server_create_basic_auth(
+    nb_api: pynetbox.api,
+    kea_basic_url: str,
+    kea_basic_username: str,
+    kea_basic_password: str,
+) -> None:
+    nb_api.plugins.kea.servers.create(
+        name="basic",
+        server_url=kea_basic_url,
+        username=kea_basic_username,
+        password=kea_basic_password,
+    )
+
+
+def test_server_create_client_cert(
+    nb_api: pynetbox.api,
+    kea_cert_url: str,
+    kea_client_cert: str,
+    kea_client_key: str,
+    kea_ca: str,
+) -> None:
+    nb_api.plugins.kea.servers.create(
+        name="client_cert",
+        server_url=kea_cert_url,
+        client_cert_path=kea_client_cert,
+        client_key_path=kea_client_key,
+        ca_file_path=kea_ca,
+    )
+
+
+def test_server_create_invalid_key(
+    nb_api: pynetbox.api,
+    kea_cert_url: str,
+    kea_client_cert: str,
+    kea_ca: str,
+) -> None:
+    with pytest.raises(RequestError):
+        nb_api.plugins.kea.servers.create(
+            name="client_cert",
+            server_url=kea_cert_url,
+            client_cert_path=kea_client_cert,
+            client_key_path="foo",
+            ca_file_path=kea_ca,
+        )
+
+
+def test_server_create_invalid_cert(
+    nb_api: pynetbox.api,
+    kea_cert_url: str,
+    kea_client_key: str,
+    kea_ca: str,
+) -> None:
+    with pytest.raises(RequestError):
+        nb_api.plugins.kea.servers.create(
+            name="client_cert",
+            server_url=kea_cert_url,
+            client_cert_path="foo",
+            client_key_path=kea_client_key,
+            ca_file_path=kea_ca,
+        )
+
+
+def test_server_create_key_no_cert(
+    nb_api: pynetbox.api,
+    kea_cert_url: str,
+    kea_client_key: str,
+    kea_ca: str,
+) -> None:
+    with pytest.raises(RequestError):
+        nb_api.plugins.kea.servers.create(
+            name="client_cert",
+            server_url=kea_cert_url,
+            client_key_path=kea_client_key,
+            ca_file_path=kea_ca,
+        )
+
+
+def test_server_create_cert_no_key(
+    nb_api: pynetbox.api,
+    kea_cert_url: str,
+    kea_client_cert: str,
+    kea_ca: str,
+) -> None:
+    with pytest.raises(RequestError):
+        nb_api.plugins.kea.servers.create(
+            name="client_cert",
+            server_url=kea_cert_url,
+            client_cert_path=kea_client_cert,
+            ca_file_path=kea_ca,
+        )
+
+
+def test_server_create_https(
+    nb_api: pynetbox.api, kea_https_url: str, kea_ca: str
+) -> None:
+    nb_api.plugins.kea.servers.create(
+        name="https",
+        server_url=kea_https_url,
+        ca_file_path=kea_ca,
+    )
+
+
+def test_server_create_ca_ssl_verify_false(
+    nb_api: pynetbox.api, kea_https_url: str, kea_ca: str
+) -> None:
+    with pytest.raises(RequestError):
+        nb_api.plugins.kea.servers.create(
+            name="https",
+            server_url=kea_https_url,
+            ca_file_path=kea_ca,
+            ssl_verify=False,
+        )
+
+
+def test_server_create_untrusted(nb_api: pynetbox.api, kea_https_url: str) -> None:
+    with pytest.raises(RequestError):
+        nb_api.plugins.kea.servers.create(
+            name="https",
+            server_url=kea_https_url,
+        )
+
+
+def test_server_create_no_ssl_verify(
+    nb_api: pynetbox.api,
+    kea_https_url: str,
+) -> None:
+    nb_api.plugins.kea.servers.create(
+        name="insecure",
+        server_url=kea_https_url,
+        ssl_verify=False,
+    )

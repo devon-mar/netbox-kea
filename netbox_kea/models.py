@@ -92,5 +92,5 @@ class Server(NetBoxModel):
             client.command("version-get")
         except Exception as e:
             raise ValidationError(
-                {"server_url": f"Unable to get server version {repr(e)}"}
+                {"server_url": f"Unable to get server version: {repr(e)}"}
             ) from e

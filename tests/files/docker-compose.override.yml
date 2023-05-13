@@ -16,6 +16,8 @@ services:
       LOGLEVEL: DEBUG
       DEBUG: "true"
       DB_WAIT_DEBUG: "1"
+    volumes:
+      - ./certs:/certs/:ro
   kea-dhcp6: &kea
     build:
       context: .

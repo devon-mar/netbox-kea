@@ -47,3 +47,43 @@ def nb_api(netbox_url: str, netbox_token: str) -> pynetbox.api:
     api.plugins.kea.servers.delete(api.plugins.kea.servers.all())
 
     return api
+
+
+@pytest.fixture
+def kea_basic_url() -> str:
+    return "http://nginx"
+
+
+@pytest.fixture
+def kea_basic_username() -> str:
+    return "kea"
+
+
+@pytest.fixture
+def kea_basic_password() -> str:
+    return "kea"
+
+
+@pytest.fixture
+def kea_https_url() -> str:
+    return "https://nginx"
+
+
+@pytest.fixture
+def kea_cert_url() -> str:
+    return "https://nginx:444"
+
+
+@pytest.fixture
+def kea_client_cert() -> str:
+    return "/certs/netbox.crt"
+
+
+@pytest.fixture
+def kea_client_key() -> str:
+    return "/certs/netbox.key"
+
+
+@pytest.fixture
+def kea_ca() -> str:
+    return "/certs/nginx.crt"

@@ -34,8 +34,8 @@ class KeaClient:
             self._session.verify = verify
         if username is not None and password is not None:
             self._session.auth = HTTPBasicAuth(username, password)
-        if client_cert is not None:
-            self.cert = (client_cert, client_key)
+        if client_cert is not None and client_key is not None:
+            self._session.cert = (client_cert, client_key)
 
     def command(
         self,
