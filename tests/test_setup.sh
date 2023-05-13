@@ -9,6 +9,11 @@ echo "Copying whl"
 WHL_FILE=$(ls ./dist/ | grep .whl)
 cp  "./dist/$WHL_FILE" ./netbox-docker/
 
+echo "Generating certs"
+mkdir ./tests/files/certs/
+openssl req -new -newkey rsa:2048 -sha256 -days 365 -nodes -x509 -keyout ./tests/files/certs/netbox.key -out ./tests/files/certs/netbox.crt -addext "subjectAltName=DNS:netbox" -subj "/CN=netbox"
+openssl req -new -newkey rsa:2048 -sha256 -days 365 -nodes -x509 -keyout ./tests/files/certs/nginx.key -out ./tests/files/certs/nginx.crt -addext "subjectAltName=DNS:nginx" -subj "/CN=nginx"
+
 echo "::group::docker"
 
 echo "Copying Dockerfile"
