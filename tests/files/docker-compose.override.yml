@@ -21,6 +21,9 @@ services:
       context: .
       dockerfile: Dockerfile-kea
     command: /usr/sbin/kea-ctrl-agent -c /config/kea-ctrl-agent.conf
+    depends_on:
+      - kea-dhcp4
+      - kea-dhcp6
     volumes:
       - ./kea_configs/:/config/:ro
       - kea-run:/run/kea/
@@ -36,6 +39,8 @@ services:
     ports: []
   nginx:
     image: nginx:alpine-slim
+    depends_on:
+      - kea-ctrl-agent
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./htpasswd:/etc/nginx/htpasswd:ro
