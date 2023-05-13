@@ -1,0 +1,19 @@
+{% extends "generic/object.html" %}
+
+{% block content %}
+  {% for name, service_data in statuses.items %}
+    <div class="card">
+      <h5 class="card-header">{{ name }}</h5>
+      <div class="card-body">
+        <table class="table table-hover attr-table">
+          {% for k,v in service_data.items %}
+          <tr>
+            <th scope="row">{{ k }}</th>
+            <td>{% if k == "Version" %}<code>{{ v }}</code>{% else %}{{ v }}{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  {% endfor %}
+{% endblock %}

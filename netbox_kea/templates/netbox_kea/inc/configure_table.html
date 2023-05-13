@@ -1,0 +1,17 @@
+<div class="row mb-3">
+  <div class="col-auto ms-auto table-controls noprint">
+    {% if request.user.is_authenticated and table_modal %}
+    <div class="table-configure input-group input-group-sm">
+      <button
+        type="button"
+        data-bs-toggle="modal"
+        title="Configure Table"
+        data-bs-target="#{{ table_modal }}"
+        class="btn btn-sm btn-outline-dark"
+      >
+        <i class="mdi mdi-cog"></i> Configure Table
+      </button>
+    </div>
+    {% endif %}
+  </div>
+</div>

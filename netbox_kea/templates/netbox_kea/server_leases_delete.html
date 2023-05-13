@@ -1,0 +1,34 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Delete {{ lease_ips|length }} leases?{% endblock %}
+
+{% block content %}
+  <div class="container-md px-0">
+    <div class="alert alert-danger mb-3" role="alert">
+      <h4 class="alert-heading">Confirm Lease Deletion</h4>
+      <hr />
+      <strong>Warning:</strong> The following operation will delete <strong>{{ lease_ips|length }}</strong>
+      lease(s). Please carefully review the lease(s) to be deleted and confirm below.
+    </div>
+  </div>
+  <div class="container-xl px-0">
+    <ul>
+      {% for ip in lease_ips %}
+      <li>{{ ip }}</li>
+      {% endfor %}
+    </ul>
+    <div class="row mt-3">
+      <form action="" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="return_url" value="{{ return_url }}" />
+        {% for field in form.hidden_fields %}
+          {{ field }}
+        {% endfor %}
+        <div class="text-end">
+          <a href="{{ return_url }}" class="btn btn-outline-dark">Cancel</a>
+          <button type="submit" name="_confirm" class="btn btn-danger">Delete {{ lease_ips|length }} lease(s)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

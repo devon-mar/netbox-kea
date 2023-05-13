@@ -1,0 +1,32 @@
+{% extends "generic/object.html" %}
+{% load helpers %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+  {% include "netbox_kea/inc/configure_table.html" with table_modal="SubnetTable_config" %}
+  <div class="card">
+    <div class="card-body">
+      {% render_table table %}
+    </div>
+  </div>
+  {# use .bulk-buttons so we can align the export button right #}
+  <div class="noprint bulk-buttons">
+    <div class="bulk-button-group"></div>
+    <div class="bulk-button-group">
+      <div class="dropdown">
+        <button type="button" class="btn btn-sm btn-purple dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <i class="mdi mdi-download"></i>&nbsp;Export
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="?export=table">Current View</a></li>
+          <li><a class="dropdown-item" href="?export">All Data (CSV)</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block modals %}
+  {{ block.super }}
+  {% table_config_form table %}
+{% endblock %}

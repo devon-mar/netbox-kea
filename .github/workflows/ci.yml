@@ -1,0 +1,101 @@
+---
+name: CI
+
+"on":
+  push:
+    branches:
+      - "*"
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install poetry
+        uses: snok/install-poetry@v1.3.3
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        id: cache-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Run poetry install
+        run: poetry install
+        if: steps.cache-poetry-dependencies.outputs.cache-hit != 'true'
+
+      - uses: psf/black@stable
+
+      - name: Lint with flake8
+        run: |
+          poetry run flake8 . --count --max-line-length=120 --show-source --statistics
+  test:
+    strategy:
+      matrix:
+        include:
+          - container_tag: v3.5
+            netbox_docker_tag: 2.6.1
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install poetry
+        uses: snok/install-poetry@v1.3.3
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        id: cache-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Run poetry install
+        run: poetry install
+        if: steps.cache-poetry-dependencies.outputs.cache-hit != 'true'
+
+      - name: Ensure playwright browsers are installed
+        run: poetry run playwright install --with-deps
+
+      - name: Checkout netbox-community/netbox-docker
+        uses: actions/checkout@v3
+        with:
+          repository: netbox-community/netbox-docker
+          path: netbox-docker
+          ref: ${{ matrix.netbox_docker_tag }}
+
+      - name: Run poetry build
+        run: poetry build
+
+      - name: Run test_setup.sh
+        run: ./tests/test_setup.sh
+        env:
+          NETBOX_CONTAINER_TAG: ${{ matrix.container_tag }}
+
+      - name: Run pytest
+        run: |
+          poetry run pytest -v
+
+      - name: Show Docker logs
+        if: ${{ always() }}
+        run: docker-compose logs
+        working-directory: ./netbox-docker/

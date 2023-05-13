@@ -1,0 +1,39 @@
+---
+version: "3.4"
+services:
+  netbox:
+    build: .
+    ports:
+      - 8000:8080
+    healthcheck:
+      start_period: 300s
+    environment:
+      SKIP_SUPERUSER: "false"
+      SUPERUSER_API_TOKEN: "0123456789abcdef0123456789abcdef01234567"
+      SUPERUSER_EMAIL: "admin"
+      SUPERUSER_NAME: "admin"
+      SUPERUSER_PASSWORD: "admin"
+      LOGLEVEL: DEBUG
+      DEBUG: "true"
+      DB_WAIT_DEBUG: "1"
+  kea-ctrl-agent: &kea
+    build:
+      context: .
+      dockerfile: Dockerfile-kea
+    command: /usr/sbin/kea-ctrl-agent -c /config/kea-ctrl-agent.conf
+    volumes:
+      - ./kea_configs/:/config/:ro
+      - kea-run:/run/kea/
+    ports:
+      - 8001:8000
+  kea-dhcp4:
+    <<: *kea
+    command: /usr/sbin/kea-dhcp4 -c /config/kea-dhcp4.conf
+    ports: []
+  kea-dhcp6:
+    <<: *kea
+    command: /usr/sbin/kea-dhcp6 -c /config/kea-dhcp6.conf
+    ports: []
+volumes:
+  kea-run:
+    driver: local

@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "netbox-kea"
+version = "0.1.0"
+description = ""
+authors = ["Devon Mar <devonm@mdmm.ca>"]
+readme = "README.md"
+packages = [{include = "netbox_kea"}]
+
+[tool.poetry.dependencies]
+python = "^3.8.1"
+requests = "^2"
+netaddr = "^0.8.0"
+
+[tool.poetry.group.dev.dependencies]
+django-stubs = {extras = ["compatible-mypy"], version = "^4.2.0"}
+mypy = "^1.2.0"
+types-requests = "^2"
+pytest = "^7"
+pynetbox = "^7"
+flake8 = "^6.0.0"
+pytest-playwright = "^0.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+extend-exclude = """
+  netbox_kea/migrations
+"""

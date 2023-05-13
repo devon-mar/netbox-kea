@@ -1,0 +1,109 @@
+{% load form_helpers %}
+{% load helpers %}
+{% load render_table from django_tables2 %}
+
+<div id="lease-search">
+  <div class="row px-3">
+    <div class="col col-6 offset-3 py-3">
+      <form
+        class="form form-horizontal"
+        hx-get="."
+        hx-target="#lease-search"
+        hx-indicator="#search-indicator"
+        hx-push-url="true"
+        {% if form.is_bound and is_embedded and form.is_valid %}hx-trigger="load"{% endif %}
+      >
+        {% if form.cleaned_data.page %}
+          {# Only include on full page load so that the user lands on the correct page. #}
+          <input type="hidden" id="id_page" name="page" value="{{ form.cleaned_data.page }}">
+        {% endif %}
+        {% for e in form.errors.page %}
+          <div class="alert alert-danger" role="alert">{{ e }}</div>
+        {% endfor %}
+        {% render_form form %}
+        <div class="text-end">
+          <div id="search-indicator" class="spinner-border d-inline-block align-middle htmx-indicator me-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <span class="mdi mdi-magnify" aria-hidden="true"></span> Search
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if not is_embedded and form.is_valid %}
+    {% include "netbox_kea/inc/configure_table.html" with table_modal="ObjectTable_config" %}
+    <form method="post" action="{{ delete_action }}">
+      {% csrf_token %}
+      <input type="hidden" name="return_url" value="{{ request.path }}?{{ request.GET.urlencode }}" />
+      <div class="card">
+        <div class="card-body">
+            {% render_table table %}
+          <div class="row">
+            <div class="col col-md-6 mb-0">
+              {% if paginate %}
+                <a
+                  class="btn btn-sm btn-outline-secondary{% if not next_page %} disabled{% endif %}"
+                  role="button"
+                  {% if next_page %}
+                  hx-get="{% querystring request page=next_page %}"
+                  hx-target="#lease-search"
+                  hx-indicator="#next-indicator"
+                  hx-push-url="true"
+                  {% else %}
+                  aria-disabled="true"
+                  {% endif %}
+                >Next</a>
+                <div id="next-indicator" class="spinner-border spinner-border-sm d-inline-block align-middle htmx-indicator" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              {% endif %}
+            </div>
+            <div class="col col-md-6 mb-0 text-end">
+              {% if paginate %}
+                <div class="dropdown dropup">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                  Per Page
+                  </button>
+                  <ul class="dropdown-menu">
+                    {% for n in page_lengths %}
+                      <li>
+                        <a href="#"
+                           hx-get="{% querystring request per_page=n %}"
+                           hx-target="#lease-search"
+                           hx-push-url="true"
+                           class="dropdown-item"
+                        >{{ n }}</a>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% endif %}
+              <small class="text-end text-muted">Showing {{ table.rows|length }} lease(s)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      {# use .bulk-buttons so we can align the export button right #}
+      <div class="noprint bulk-buttons">
+        <div class="bulk-button-group">
+          <button type="submit" class="btn btn-sm btn-danger"><i class="mdi mdi-trash-can-outline" aria-hidden="true"></i> Delete Selected
+          </button>
+        </div>
+        <div class="bulk-button-group">
+          <div class="dropdown">
+            <button type="button" class="btn btn-sm btn-purple dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="mdi mdi-download"></i>&nbsp;Export
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{% querystring request export="table" %}">Current View</a></li>
+              <li><a class="dropdown-item" href="{% querystring request export="" %}">All Data (CSV)</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </form>
+  {% endif %}
+</div>

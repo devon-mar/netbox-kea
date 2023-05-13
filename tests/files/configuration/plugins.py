@@ -1,0 +1,1 @@
+PLUGINS = ["netbox_kea"]
