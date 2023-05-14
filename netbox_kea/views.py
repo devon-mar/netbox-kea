@@ -114,7 +114,7 @@ class ServerStatusView(generic.ObjectView):
                 ha_servers = ha[0].get("ha-servers")
                 ha_local = ha_servers.get("local", {})
                 ha_remote = ha_servers.get("remote", {})
-                resp.update(
+                resp[services[svc]].update(
                     {
                         "HA mode": ha[0].get("ha-mode"),
                         "HA local role": ha_local.get("role"),
