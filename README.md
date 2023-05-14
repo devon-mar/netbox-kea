@@ -25,10 +25,12 @@ This plugin allows you to view Kea status, leases and subnets in NetBox. Go dire
 
 ## Requirements
 
+- NetBox > v3.5.
 - [Kea Control Agent](https://kea.readthedocs.io/en/latest/arm/agent.html)
-- The [`lease_cmds`](https://kea.readthedocs.io/en/latest/arm/hooks.html#lease-cmds-lease-commands-for-easier-lease-management) hook library
+- [`lease_cmds`](https://kea.readthedocs.io/en/latest/arm/hooks.html#lease-cmds-lease-commands-for-easier-lease-management) hook library
 
 ## Compatibility
+
 - This plugin was tested with Kea v2.2.0 with the `memfile` lease database.
   Other versions and lease databases may also work.
 
@@ -41,3 +43,29 @@ This plugin allows you to view Kea status, leases and subnets in NetBox. Go dire
     PLUGINS = ["netbox_kea"]
     ```
 3. Run `./migrate.py migrate`
+
+## Custom Links
+
+You can add custom links to NetBox models to easily search for leases.
+
+Make sure to replace `<Kea Server ID>` in the link URL with the object ID of your Kea server. To find a server's ID, open the page for the server
+and look at the top right corner for `netbox_kea.server:<Server ID Here>`.
+
+### Show DHCP leases for a prefix
+
+**Content types**: `IPAM > Prefix`
+**Link URL**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases{{ object.prefix.version }}/?q={{ object.prefix }}&by=subnet`
+
+### Show DHCP leases for a device/VM interface (by MAC):
+
+**Content types**: `DCIM > Interface`, `Virtualization > Interface`
+**Link URL (DHCPv4)**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases4/?q={{ object.mac_address }}&by=hw`
+**Link URL (DHCPv6)**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases6/?q={{ object.mac_address }}&by=hw`
+
+### Show DHCP leases for a device/VM (by name):
+
+**Content types**: `DCIM > Device`, `Virtualization > Virtual Machine`
+**Link URL (DHCPv4)**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases4/?q={{ object.name|lower }}&by=hostname`
+**Link URL (DHCPv4)**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases6/?q={{ object.name|lower }}&by=hostname`
+
+You may also use a custom field by replacing `{{ object.name|lower }}` with `{{ object.cf.<your custom field>|lower }}`.
