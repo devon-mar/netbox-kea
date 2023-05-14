@@ -174,7 +174,7 @@ class BaseLeaseTable(GenericTable):
     ip_address = tables.Column(verbose_name="IP Address")
     hostname = tables.Column(verbose_name="Hostname")
     subnet_id = tables.Column(verbose_name="Subnet ID")
-    hw_address = MonospaceColumn(verbose_name="HW Address")
+    hw_address = MonospaceColumn(verbose_name="Hardware Address")
     valid_lft = DurationColumn(verbose_name="Valid Lifetime")
     cltt = tables.DateTimeColumn(verbose_name="Client Last Transaction Time")
     expires_at = tables.DateTimeColumn(verbose_name="Expires At")

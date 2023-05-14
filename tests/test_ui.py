@@ -454,7 +454,7 @@ def test_dhcp_lease_all_columns(
             True,
             (
                 ("IP Address", "ip-address"),
-                ("HW Address", "hw-address"),
+                ("Hardware Address", "hw-address"),
                 ("DUID", "duid"),
                 ("IAID", "iaid"),
             ),
@@ -473,7 +473,7 @@ def test_dhcp_lease_all_columns(
             True,
             (
                 ("IP Address", "ip-address"),
-                ("HW Address", "hw-address"),
+                ("Hardware Address", "hw-address"),
                 ("Client ID", "client-id"),
                 ("Hostname", "hostname"),
             ),
