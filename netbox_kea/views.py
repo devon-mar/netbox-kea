@@ -15,6 +15,7 @@ from utilities.paginator import EnhancedPaginator, get_paginate_count
 from utilities.views import GetReturnURLMixin, ViewTab, register_model_view
 
 from . import constants, forms, tables
+from .filtersets import ServerFilterSet
 from .kea import KeaClient, KeaException
 from .models import Server
 from .utilities import export_table, format_duration, format_leases
@@ -39,6 +40,8 @@ class ServerDeleteView(generic.ObjectDeleteView):
 class ServerListView(generic.ObjectListView):
     queryset = Server.objects.all()
     table = tables.ServerTable
+    filterset = ServerFilterSet
+    filterset_form = forms.ServerFilterForm
 
 
 class ServerBulkDeleteView(generic.BulkDeleteView):

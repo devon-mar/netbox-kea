@@ -3,8 +3,9 @@ from typing import Any, Dict, Literal, Optional
 from django import forms
 from django.core.exceptions import ValidationError
 from netaddr import EUI, AddrFormatError, IPAddress, IPNetwork, mac_unix_expanded
-from netbox.forms import NetBoxModelForm
+from netbox.forms import NetBoxModelFilterSetForm, NetBoxModelForm
 from utilities.forms import BootstrapMixin
+from utilities.forms.fields import TagFilterField
 
 from . import constants
 from .models import Server
@@ -35,6 +36,11 @@ class VeryHiddenInput(forms.HiddenInput):
 
     def render(self, name: str, value: Any, attrs: Any, renderer: Any) -> str:
         return ""
+
+
+class ServerFilterForm(NetBoxModelFilterSetForm):
+    model = Server
+    tag = TagFilterField(model)
 
 
 class BaseLeasesSarchForm(BootstrapMixin, forms.Form):

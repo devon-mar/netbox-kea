@@ -64,7 +64,7 @@ def kea(with_test_server: None, kea_client: KeaClient) -> KeaClient:
 
 @pytest.fixture
 def plugin_base(netbox_url: str) -> str:
-    return f"{netbox_url}/plugins/kea/"
+    return f"{netbox_url}/plugins/kea"
 
 
 @pytest.fixture
@@ -151,6 +151,14 @@ def netbox_login(
     page.get_by_placeholder("Username").fill(netbox_username)
     page.get_by_placeholder("Password").fill(netbox_password)
     page.get_by_role("button", name="Sign In").click()
+
+
+@pytest.fixture
+def test_tag(nb_api: pynetbox.api):
+    tag = nb_api.extras.tags.create(name="kea-test", slug="kea-test")
+    assert tag is not None
+    yield tag.name
+    tag.delete()
 
 
 def search_lease(page: Page, version: Literal[4, 6], by: str, q: str) -> None:
@@ -803,3 +811,22 @@ def test_lease_search_page_param_without_subnet(
     expect(page.locator("form.form").get_by_role("alert")).to_contain_text(
         "page is only supported with subnet."
     )
+
+
+def test_filter_servers_by_tag(
+    nb_api: pynetbox.api,
+    test_tag: str,
+    kea_url: str,
+    plugin_base: str,
+    page: Page,
+) -> None:
+    nb_api.plugins.kea.servers.create(
+        name="tag-test", server_url=kea_url, tags=[{"name": test_tag}]
+    )
+
+    page.goto(f"{plugin_base}/servers/")
+    page.get_by_role("tab", name="Filters").click()
+    page.get_by_text("Select Tags").click()
+    page.get_by_role("option", name=f"{test_tag} (1)").click()
+    page.get_by_role("button", name=re.compile("Search")).click()
+    expect(page.get_by_text("Showing 1-1 of 1")).to_have_count(1)
