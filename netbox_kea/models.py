@@ -1,5 +1,6 @@
 import os
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
@@ -57,6 +58,7 @@ class Server(NetBoxModel):
             verify=self.ca_file_path or self.ssl_verify,
             client_cert=self.client_cert_path or None,
             client_key=self.client_key_path or None,
+            timeout=settings.PLUGINS_CONFIG["netbox_kea"]["kea_timeout"],
         )
 
     def clean(self) -> None:
