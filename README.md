@@ -54,18 +54,23 @@ and look at the top right corner for `netbox_kea.server:<Server ID Here>`.
 ### Show DHCP leases for a prefix
 
 **Content types**: `IPAM > Prefix`
+
 **Link URL**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases{{ object.prefix.version }}/?q={{ object.prefix }}&by=subnet`
 
 ### Show DHCP leases for a device/VM interface (by MAC):
 
 **Content types**: `DCIM > Interface`, `Virtualization > Interface`
+
 **Link URL (DHCPv4)**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases4/?q={{ object.mac_address }}&by=hw`
+
 **Link URL (DHCPv6)**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases6/?q={{ object.mac_address }}&by=hw`
 
 ### Show DHCP leases for a device/VM (by name):
 
 **Content types**: `DCIM > Device`, `Virtualization > Virtual Machine`
+
 **Link URL (DHCPv4)**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases4/?q={{ object.name|lower }}&by=hostname`
+
 **Link URL (DHCPv4)**: `https://netbox.example.com/plugins/kea/servers/<Kea Server ID>/leases6/?q={{ object.name|lower }}&by=hostname`
 
 You may also use a custom field by replacing `{{ object.name|lower }}` with `{{ object.cf.<your custom field>|lower }}`.
