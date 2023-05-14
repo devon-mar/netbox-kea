@@ -12,6 +12,8 @@ This plugin allows you to view Kea status, leases and subnets in NetBox. Go dire
 - View DHCP subnets from Kea's configuration.
 - REST API and GraphQL support for managing Server objects.
 
+![Screenshot of DHCP leases](images/leases.png)
+
 ## Limitations
 
 - Due to limitations in the Kea management API, pagination is only supported when searching for leases by subnet.
