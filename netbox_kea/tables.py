@@ -38,8 +38,8 @@ LEASE_ACTIONS = """<span class="dropdown">
         {% if record.ip_address %}
         <li>
             <a href="{% url "ipam:ipaddress_list" %}?address={{ record.ip_address }}" class="dropdown-item">
-                <i class="mdi mdi-magnify" aria-hidden="true" title="Search IP"></i>
-                Search IP
+                <i class="mdi mdi-magnify" aria-hidden="true" title="Search IPs"></i>
+                Search IPs
             </a>
         </li>
         {% endif %}
