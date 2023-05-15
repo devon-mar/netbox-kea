@@ -91,6 +91,80 @@ def lease6(kea: KeaClient) -> Dict[str, Any]:
 
 
 @pytest.fixture
+def lease6_netbox_device(
+    nb_api: pynetbox.api,
+    test_device_type: int,
+    test_device_role: int,
+    test_site: int,
+    lease6: Dict[str, Any],
+):
+    lease_ip = lease6["ip-address"]
+
+    device = nb_api.dcim.devices.create(
+        name=lease6["hostname"],
+        device_type=test_device_type,
+        device_role=test_device_role,
+        site=test_site,
+    )
+
+    interface = nb_api.dcim.interfaces.create(
+        name="eth0",
+        type="1000base-t",
+        device=device.id,
+        mac_address=lease6["hw-address"],
+    )
+
+    ip = nb_api.ipam.ip_addresses.create(
+        address=f"{lease_ip}/64",
+        assigned_object_type="dcim.interface",
+        assigned_object_id=interface.id,
+    )
+
+    yield lease_ip
+    ip.delete()
+    interface.delete()
+    device.delete()
+
+
+@pytest.fixture
+def lease6_netbox_vm(
+    nb_api: pynetbox.api,
+    test_cluster: int,
+    test_device_role: int,
+    lease6: Dict[str, Any],
+):
+    lease_ip = lease6["ip-address"]
+
+    vm = nb_api.virtualization.virtual_machines.create(
+        name=lease6["hostname"],
+        cluster=test_cluster,
+        role=test_device_role,
+    )
+    interface = nb_api.virtualization.interfaces.create(
+        name="eth0", virtual_machine=vm.id, mac_address=lease6["hw-address"]
+    )
+    ip = nb_api.ipam.ip_addresses.create(
+        address=f"{lease_ip}/64",
+        assigned_object_type="virtualization.vminterface",
+        assigned_object_id=interface.id,
+    )
+
+    yield lease_ip
+
+    ip.delete()
+    interface.delete()
+    vm.delete()
+
+
+@pytest.fixture
+def lease6_netbox_ip(nb_api: pynetbox.api, lease6: Dict[str, Any]):
+    lease_ip = lease6["ip-address"]
+    ip = nb_api.ipam.ip_addresses.create(address=f"{lease_ip}/64")
+    yield lease_ip
+    ip.delete()
+
+
+@pytest.fixture
 def lease4(kea: KeaClient) -> Dict[str, Any]:
     lease_ip = "192.0.2.1"
     kea.command(
@@ -111,18 +185,77 @@ def lease4(kea: KeaClient) -> Dict[str, Any]:
 
 
 @pytest.fixture
-def leases4_250(kea: KeaClient) -> None:
-    for i in range(1, 251):
-        kea.command(
-            "lease4-add",
-            service=["dhcp4"],
-            arguments={
-                "ip-address": f"192.0.2.{i}",
-                "client-id": str(EUI(i * 10, dialect=mac_unix_expanded)),
-                "hw-address": str(EUI(i, dialect=mac_unix_expanded)),
-                "hostname": f"test-lease4-{i}",
-            },
-        )
+def lease4_netbox_device(
+    nb_api: pynetbox.api,
+    test_device_type: int,
+    test_device_role: int,
+    test_site: int,
+    lease4: Dict[str, Any],
+):
+    lease_ip = lease4["ip-address"]
+
+    device = nb_api.dcim.devices.create(
+        name=lease4["hostname"],
+        device_type=test_device_type,
+        device_role=test_device_role,
+        site=test_site,
+    )
+
+    interface = nb_api.dcim.interfaces.create(
+        name="eth0",
+        type="1000base-t",
+        device=device.id,
+        mac_address=lease4["hw-address"],
+    )
+
+    ip = nb_api.ipam.ip_addresses.create(
+        address=f"{lease_ip}/24",
+        assigned_object_type="dcim.interface",
+        assigned_object_id=interface.id,
+    )
+
+    yield lease_ip
+    ip.delete()
+    interface.delete()
+    device.delete()
+
+
+@pytest.fixture
+def lease4_netbox_vm(
+    nb_api: pynetbox.api,
+    test_cluster: int,
+    test_device_role: int,
+    lease4: Dict[str, Any],
+):
+    lease_ip = lease4["ip-address"]
+
+    vm = nb_api.virtualization.virtual_machines.create(
+        name=lease4["hostname"],
+        cluster=test_cluster,
+        role=test_device_role,
+    )
+    interface = nb_api.virtualization.interfaces.create(
+        name="eth0", virtual_machine=vm.id, mac_address=lease4["hw-address"]
+    )
+    ip = nb_api.ipam.ip_addresses.create(
+        address=f"{lease_ip}/24",
+        assigned_object_type="virtualization.vminterface",
+        assigned_object_id=interface.id,
+    )
+
+    yield lease_ip
+
+    ip.delete()
+    interface.delete()
+    vm.delete()
+
+
+@pytest.fixture
+def lease4_netbox_ip(nb_api: pynetbox.api, lease4: Dict[str, Any]):
+    lease_ip = lease4["ip-address"]
+    ip = nb_api.ipam.ip_addresses.create(address=f"{lease_ip}/24")
+    yield lease_ip
+    ip.delete()
 
 
 @pytest.fixture
@@ -139,6 +272,21 @@ def leases6_250(kea: KeaClient) -> None:
                 "valid-lft": 3600,
                 "hostname": f"test-lease6-{i}",
                 "preferred-lft": 7200,
+            },
+        )
+
+
+@pytest.fixture
+def leases4_250(kea: KeaClient) -> None:
+    for i in range(1, 251):
+        kea.command(
+            "lease4-add",
+            service=["dhcp4"],
+            arguments={
+                "ip-address": f"192.0.2.{i}",
+                "client-id": str(EUI(i * 10, dialect=mac_unix_expanded)),
+                "hw-address": str(EUI(i, dialect=mac_unix_expanded)),
+                "hostname": f"test-lease4-{i}",
             },
         )
 
@@ -161,6 +309,49 @@ def test_tag(nb_api: pynetbox.api):
     tag.delete()
 
 
+@pytest.fixture
+def test_site(nb_api: pynetbox.api):
+    site = nb_api.dcim.sites.create(name="Test Site", slug="test-site")
+    yield site.id
+    site.delete()
+
+
+@pytest.fixture
+def test_device_type(nb_api: pynetbox.api):
+    manufacturer = nb_api.dcim.manufacturers.create(
+        name="Test Manufacturer", slug="test-manufacturer"
+    )
+    device_type = nb_api.dcim.device_types.create(
+        manufacturer=manufacturer.id,
+        model="test model",
+        slug="test-model",
+    )
+    yield device_type.id
+    device_type.delete()
+    manufacturer.delete()
+
+
+@pytest.fixture
+def test_device_role(nb_api: pynetbox.api):
+    role = nb_api.dcim.device_roles.create(name="Test Role", slug="test-role")
+    yield role.id
+    role.delete()
+
+
+@pytest.fixture
+def test_cluster(nb_api: pynetbox.api):
+    cluster_type = nb_api.virtualization.cluster_types.create(
+        name="test cluster type",
+        slug="test-cluster-type",
+    )
+    cluster = nb_api.virtualization.clusters.create(
+        name="Test Cluster", type=cluster_type.id
+    )
+    yield cluster.id
+    cluster.delete()
+    cluster_type.delete()
+
+
 def search_lease(page: Page, version: Literal[4, 6], by: str, q: str) -> None:
     page.get_by_role("link", name=f"DHCPv{version} Leases").click()
     page.locator("#id_q").fill(q)
@@ -170,6 +361,12 @@ def search_lease(page: Page, version: Literal[4, 6], by: str, q: str) -> None:
     with page.expect_response(re.compile(f"/leases{version}/")) as r:
         page.get_by_role("button", name="Search").click()
         assert r.value.ok
+
+
+def search_lease_related(page: Page, model: str) -> None:
+    page.locator("span.dropdown > a.btn-secondary").click()
+    page.get_by_role("link", name=f"Search {model}").click()
+    expect(page.get_by_text("Showing 1-1 of 1")).to_have_count(1)
 
 
 def expect_form_error_search(page: Page, b: bool) -> None:
@@ -830,3 +1027,54 @@ def test_filter_servers_by_tag(
     page.get_by_role("option", name=f"{test_tag} (1)").click()
     page.get_by_role("button", name=re.compile("Search")).click()
     expect(page.get_by_text("Showing 1-1 of 1")).to_have_count(1)
+
+
+@pytest.mark.parametrize("version", (6, 4))
+def test_lease_to_ip(
+    page: Page,
+    with_test_server: None,
+    request: pytest.FixtureRequest,
+    version: Literal[6, 4],
+) -> None:
+    lease_ip: str = request.getfixturevalue(f"lease{version}_netbox_ip")
+
+    search_lease(page, version, "IP Address", lease_ip)
+    search_lease_related(page, "IPs")
+
+
+@pytest.mark.parametrize("version", (6, 4))
+def test_lease_to_device(
+    page: Page,
+    with_test_server: None,
+    request: pytest.FixtureRequest,
+    version: Literal[6, 4],
+) -> None:
+    lease_ip: str = request.getfixturevalue(f"lease{version}_netbox_device")
+
+    server_url = page.url
+
+    search_lease(page, version, "IP Address", lease_ip)
+    search_lease_related(page, "devices")
+
+    page.goto(server_url)
+    search_lease(page, version, "IP Address", lease_ip)
+    search_lease_related(page, "interfaces")
+
+
+@pytest.mark.parametrize("version", (6, 4))
+def test_lease_to_vm(
+    page: Page,
+    with_test_server: None,
+    request: pytest.FixtureRequest,
+    version: Literal[6, 4],
+) -> None:
+    lease_ip: str = request.getfixturevalue(f"lease{version}_netbox_vm")
+
+    server_url = page.url
+
+    search_lease(page, version, "IP Address", lease_ip)
+    search_lease_related(page, "VMs")
+
+    page.goto(server_url)
+    search_lease(page, version, "IP Address", lease_ip)
+    search_lease_related(page, "VM interfaces")
