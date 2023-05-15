@@ -301,7 +301,7 @@ def netbox_login(
     page.get_by_role("button", name="Sign In").click()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_tag(nb_api: pynetbox.api):
     tag = nb_api.extras.tags.create(name="kea-test", slug="kea-test")
     assert tag is not None
@@ -309,14 +309,14 @@ def test_tag(nb_api: pynetbox.api):
     tag.delete()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_site(nb_api: pynetbox.api):
     site = nb_api.dcim.sites.create(name="Test Site", slug="test-site")
     yield site.id
     site.delete()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_device_type(nb_api: pynetbox.api):
     manufacturer = nb_api.dcim.manufacturers.create(
         name="Test Manufacturer", slug="test-manufacturer"
@@ -331,14 +331,14 @@ def test_device_type(nb_api: pynetbox.api):
     manufacturer.delete()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_device_role(nb_api: pynetbox.api):
     role = nb_api.dcim.device_roles.create(name="Test Role", slug="test-role")
     yield role.id
     role.delete()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_cluster(nb_api: pynetbox.api):
     cluster_type = nb_api.virtualization.cluster_types.create(
         name="test cluster type",
