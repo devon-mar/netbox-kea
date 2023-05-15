@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from netaddr import EUI, AddrFormatError, IPAddress, IPNetwork, mac_unix_expanded
 from netbox.forms import NetBoxModelFilterSetForm, NetBoxModelForm
-from utilities.forms import BootstrapMixin
+from utilities.forms import BOOLEAN_WITH_BLANK_CHOICES, BootstrapMixin
 from utilities.forms.fields import TagFilterField
 
 from . import constants
@@ -24,6 +24,8 @@ class ServerForm(NetBoxModelForm):
             "client_cert_path",
             "client_key_path",
             "ca_file_path",
+            "dhcp6",
+            "dhcp4",
             "tags",
         )
 
@@ -41,6 +43,16 @@ class VeryHiddenInput(forms.HiddenInput):
 class ServerFilterForm(NetBoxModelFilterSetForm):
     model = Server
     tag = TagFilterField(model)
+    dhcp4 = forms.NullBooleanField(
+        label="DHCPv4",
+        required=False,
+        widget=forms.Select(choices=BOOLEAN_WITH_BLANK_CHOICES),
+    )
+    dhcp6 = forms.NullBooleanField(
+        label="DHCPv6",
+        required=False,
+        widget=forms.Select(choices=BOOLEAN_WITH_BLANK_CHOICES),
+    )
 
 
 class BaseLeasesSarchForm(BootstrapMixin, forms.Form):

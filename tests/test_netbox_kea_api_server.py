@@ -253,3 +253,15 @@ def test_server_create_no_ssl_verify(
         server_url=kea_https_url,
         ssl_verify=False,
     )
+
+
+def test_server_create_dhcp4_false_dhcp6_false(
+    nb_api: pynetbox.api, kea_url: str
+) -> None:
+    with pytest.raises(RequestError):
+        nb_api.plugins.kea.servers.create(
+            name="no-services-enabled",
+            server_url="http://kea-ctrl-agent:8000",
+            dhcp4=False,
+            dhcp6=False,
+        )

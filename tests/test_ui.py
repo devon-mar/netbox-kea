@@ -53,6 +53,30 @@ def with_test_server(
 
 
 @pytest.fixture
+def with_test_server_only6(
+    nb_api: pynetbox.api, kea_url: str, page: Page, netbox_login: None, plugin_base: str
+):
+    server = nb_api.plugins.kea.servers.create(
+        name="only6", server_url=kea_url, dhcp4=False, dhcp6=True
+    )
+    page.goto(f"{plugin_base}/servers/{server.id}/")
+    yield
+    server.delete()
+
+
+@pytest.fixture
+def with_test_server_only4(
+    nb_api: pynetbox.api, kea_url: str, page: Page, netbox_login: None, plugin_base: str
+):
+    server = nb_api.plugins.kea.servers.create(
+        name="only4", server_url=kea_url, dhcp4=True, dhcp6=False
+    )
+    page.goto(f"{plugin_base}/servers/{server.id}/")
+    yield
+    server.delete()
+
+
+@pytest.fixture
 def kea_client() -> KeaClient:
     return KeaClient("http://localhost:8001")
 
@@ -830,3 +854,30 @@ def test_filter_servers_by_tag(
     page.get_by_role("option", name=f"{test_tag} (1)").click()
     page.get_by_role("button", name=re.compile("Search")).click()
     expect(page.get_by_text("Showing 1-1 of 1")).to_have_count(1)
+
+
+@pytest.mark.parametrize("version", (6, 4))
+def test_one_service_only(
+    page: Page, version: Literal[6, 4], request: pytest.FixtureRequest
+) -> None:
+    request.getfixturevalue(f"with_test_server_only{version}")
+
+    server_url = page.url
+    pages4 = int(version == 4)
+    pages6 = int(version == 6)
+    expect(page.get_by_role("link", name="DHCPv4 Leases")).to_have_count(pages4)
+    expect(page.get_by_role("link", name="DHCPv4 Subnets")).to_have_count(pages4)
+    expect(page.get_by_role("link", name="DHCPv6 Leases")).to_have_count(pages6)
+    expect(page.get_by_role("link", name="DHCPv6 Subnets")).to_have_count(pages6)
+
+    page.goto(f"{server_url}/leases6/")
+    if version == 4:
+        expect(page).to_have_url(server_url)
+    else:
+        expect(page).not_to_have_url(server_url)
+
+    page.goto(f"{server_url}/leases4/")
+    if version == 6:
+        expect(page).to_have_url(server_url)
+    else:
+        expect(page).not_to_have_url(server_url)

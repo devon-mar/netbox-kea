@@ -1,6 +1,6 @@
 import django_tables2 as tables
 from django.urls import reverse
-from netbox.tables import BaseTable, NetBoxTable, ToggleColumn
+from netbox.tables import BaseTable, BooleanColumn, NetBoxTable, ToggleColumn
 
 from netbox_kea.utilities import format_duration
 
@@ -98,6 +98,8 @@ class MonospaceColumn(tables.Column):
 
 class ServerTable(NetBoxTable):
     name = tables.Column(linkify=True)
+    dhcp6 = BooleanColumn()
+    dhcp4 = BooleanColumn()
 
     class Meta(NetBoxTable.Meta):
         model = Server
@@ -111,8 +113,10 @@ class ServerTable(NetBoxTable):
             "client_cert_path",
             "client_key_path",
             "ca_file_path",
+            "dhcp6",
+            "dhcp4",
         )
-        default_columns = ("pk", "name", "server_url")
+        default_columns = ("pk", "name", "server_url", "dhcp6", "dhcp4")
 
 
 # we can't use NetBox table because it requires an actual model

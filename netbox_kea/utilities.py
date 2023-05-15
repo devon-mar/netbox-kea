@@ -1,12 +1,16 @@
 import re
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django_tables2 import Table
 from django_tables2.export import TableExport
+from utilities.views import ViewTab
 
 from . import constants
+from .models import Server
 
 
 def format_duration(s: Optional[int]) -> Optional[str]:
@@ -66,3 +70,22 @@ def is_hex_string(s: str, min_octets: int, max_octets: int):
 
     octets = len(s.replace(":", "").replace("-", "")) / 2
     return octets >= min_octets and octets <= max_octets
+
+
+def check_dhcp_enabled(
+    instance: Server, version: Literal[6, 4]
+) -> Optional[HttpResponse]:
+    if (version == 6 and instance.dhcp6) or (version == 4 and instance.dhcp4):
+        return None
+    return redirect(instance.get_absolute_url())
+
+
+class OptionalViewTab(ViewTab):
+    def __init__(self, *args, is_enabled: Callable[[Any], bool], **kwargs) -> None:
+        self.is_enabled = is_enabled
+        super().__init__(*args, **kwargs)
+
+    def render(self, instance):
+        if self.is_enabled(instance):
+            return super().render(instance)
+        return None
