@@ -17,6 +17,14 @@
               <th scope="row">Server URL</th>
               <td>{{ object.server_url }}</td>
             </tr>
+            <tr>
+              <th scope="row">DHCPv6</th>
+              <td>{% checkmark object.dhcp6 %}</td>
+            </tr>
+            <tr>
+              <th scope="row">DHCPv4</th>
+              <td>{% checkmark object.dhcp4 %}</td>
+            </tr>
           </table>
         </div>
       </div>

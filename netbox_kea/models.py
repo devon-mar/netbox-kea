@@ -40,6 +40,8 @@ class Server(NetBoxModel):
         verbose_name="CA File Path",
         help_text="The specific CA certificate file to use for SSL verification.",
     )
+    dhcp6 = models.BooleanField(verbose_name="DHCPv6", default=True)
+    dhcp4 = models.BooleanField(verbose_name="DHCPv4", default=True)
 
     class Meta:
         ordering = ("name",)
@@ -63,6 +65,11 @@ class Server(NetBoxModel):
 
     def clean(self) -> None:
         super().clean()
+
+        if self.dhcp4 is False and self.dhcp6 is False:
+            raise ValidationError(
+                {"dhcp6": "At one of DHCPv4 and DHCPv6 needs to be enabled."}
+            )
 
         if (self.client_cert_path and not self.client_key_path) or (
             not self.client_cert_path and self.client_key_path
@@ -90,9 +97,17 @@ class Server(NetBoxModel):
             )
 
         client = self.get_client()
-        try:
-            client.command("version-get")
-        except Exception as e:
-            raise ValidationError(
-                {"server_url": f"Unable to get server version: {repr(e)}"}
-            ) from e
+        if self.dhcp6:
+            try:
+                client.command("version-get", service=["dhcp6"])
+            except Exception as e:
+                raise ValidationError(
+                    {"dhcp6": f"Unable to get DHCPv6 version: {repr(e)}"}
+                ) from e
+        if self.dhcp4:
+            try:
+                client.command("version-get", service=["dhcp4"])
+            except Exception as e:
+                raise ValidationError(
+                    {"dhcp4": f"Unable to get DHCPv4 version: {repr(e)}"}
+                ) from e

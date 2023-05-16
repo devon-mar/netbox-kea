@@ -21,6 +21,8 @@ class ServerSerializer(NetBoxModelSerializer):
             "client_cert_path",
             "client_key_path",
             "ca_file_path",
+            "dhcp6",
+            "dhcp4",
             "url",
             "display",
             "tags",
