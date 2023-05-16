@@ -514,9 +514,7 @@ def test_dhcp_subnets(
     with page.expect_response(re.compile(f"/leases{family}/")) as r:
         page.get_by_role("link", name=subnets[0]).click()
         assert r.value.ok
-    expect(page.get_by_role("textbox", name=re.compile("Search"))).to_have_text(
-        subnets[0]
-    )
+    expect(page.locator("#lease-search #id_q")).to_have_value(subnets[0])
     expect(page.locator("div.ss-single-selected > span.placeholder")).to_have_text(
         "Subnet"
     )
