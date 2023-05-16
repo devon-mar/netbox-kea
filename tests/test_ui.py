@@ -1080,6 +1080,7 @@ def test_one_service_only(
         expect(page).not_to_have_url(server_url)
 
 
+@pytest.mark.parametrize("version", (6, 4))
 def test_lease_to_ip(
     page: Page,
     with_test_server: None,
