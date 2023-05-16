@@ -513,8 +513,12 @@ def test_dhcp_subnets(
 
     expect(page).to_have_url(re.compile(f"/leases{family}/\\?"))
     page.get_by_role("link", name=subnets[0]).click()
-    expect(page.get_by_role("textbox", name=re.compile("Search"))).to_have_text(subnets[0])
-    expect(page.locator("div.ss-single-selected > span.placeholder")).to_have_text("Subnet"))
+    expect(page.get_by_role("textbox", name=re.compile("Search"))).to_have_text(
+        subnets[0]
+    )
+    expect(page.locator("div.ss-single-selected > span.placeholder")).to_have_text(
+        "Subnet"
+    )
 
 
 @pytest.mark.parametrize("family", (4, 6))
