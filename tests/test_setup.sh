@@ -26,21 +26,3 @@ docker-compose build --build-arg "FROM=netboxcommunity/netbox:$NETBOX_CONTAINER_
 docker-compose up -d
 
 echo "::endgroup::"
-
-echo "::group::Wait for NetBox to start"
-for i in {1..20}; do curl -Ss http://localhost:8000/api/status/ && break || echo -e "\033[0;33mNot started yet ($i)\033[0m" && sleep 10; done
-
-set +e
-curl -Ss http://localhost:8000/api/status/
-CURL_RET=$?
-set -e
-
-
-if [ "$CURL_RET" -ne 0 ]; then
-    echo "::error NetBox failed to start."
-    docker-compose logs
-    exit $CURL_RET
-fi
-
-echo -e "\033[0;32mNetBox started\033[0m"
-echo "::endgroup::"
