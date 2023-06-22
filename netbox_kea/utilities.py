@@ -1,7 +1,6 @@
 import re
-from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 
 from django.http import HttpResponse
 from django.shortcuts import redirect
