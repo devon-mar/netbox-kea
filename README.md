@@ -5,7 +5,7 @@ This plugin allows you to view Kea status, leases and subnets in NetBox. Go dire
 ## Features
 
 - Uses the Kea management API
-- View Kea daemon statuses. 
+- View Kea daemon statuses.
 - Supports Kea's DHCPv4 and DHCPv6 servers.
 - View, delete, export and search for DHCP leases.
 - Search for NetBox devices/VMs directly from DHCP leases.
@@ -44,7 +44,7 @@ This plugin allows you to view Kea status, leases and subnets in NetBox. Go dire
     ```python
     PLUGINS = ["netbox_kea"]
     ```
-3. Run `./migrate.py migrate`
+3. Run `./manage.py migrate`
 
 ## Custom Links
 
