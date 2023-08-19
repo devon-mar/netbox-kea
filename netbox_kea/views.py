@@ -482,11 +482,19 @@ class ServerDHCP6SubnetsView(BaseServerDHCPSubnetsView):
         config = client.command("config-get", service=["dhcp6"])
         assert config[0]["arguments"] is not None
         subnets = config[0]["arguments"]["Dhcp6"]["subnet6"]
-        return [
+        subnet_list = [
             {"id": s["id"], "subnet": s["subnet"]}
             for s in subnets
             if "id" in s and "subnet" in s
         ]
+
+        for sn in config[0]["arguments"]["Dhcp6"]["shared-networks"]:
+            for s in sn["subnet6"]:
+                subnet_list.append(
+                    dict(id=s["id"], subnet=s["subnet"], shared_network=sn["name"])
+                )
+
+        return subnet_list
 
 
 @register_model_view(Server, "subnets4")
@@ -500,8 +508,16 @@ class ServerDHCP4SubnetsView(BaseServerDHCPSubnetsView):
         config = client.command("config-get", service=["dhcp4"])
         assert config[0]["arguments"] is not None
         subnets = config[0]["arguments"]["Dhcp4"]["subnet4"]
-        return [
+        subnet_list = [
             {"id": s["id"], "subnet": s["subnet"]}
             for s in subnets
             if "id" in s and "subnet" in s
         ]
+
+        for sn in config[0]["arguments"]["Dhcp4"]["shared-networks"]:
+            for s in sn["subnet4"]:
+                subnet_list.append(
+                    dict(id=s["id"], subnet=s["subnet"], shared_network=sn["name"])
+                )
+
+        return subnet_list

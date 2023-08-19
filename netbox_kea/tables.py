@@ -159,12 +159,13 @@ class SubnetTable(GenericTable):
         if record.get("id")
         else None,
     )
+    shared_network = tables.Column(verbose_name="Shared Network")
     actions = ActionsColumn(SUBNET_ACTIONS)
 
     class Meta(GenericTable.Meta):
         empty_text = "No subnets"
-        fields = ("id", "subnet", "actions")
-        default_columns = ("id", "subnet")
+        fields = ("id", "subnet", "shared_network", "actions")
+        default_columns = ("id", "subnet", "shared_network")
 
     def __init__(self, leases_view: str, server_pk: int, *args, **kwargs):
         self.leases_view = leases_view
