@@ -1,7 +1,7 @@
 import csv
 import re
 from datetime import datetime
-from typing import Any, Dict, Literal, Sequence, Tuple
+from typing import Any, Dict, Literal, Optional, Sequence, Tuple
 
 import pynetbox
 import pytest
@@ -498,26 +498,116 @@ def test_server_status(page: Page, kea: KeaClient) -> None:
 @pytest.mark.parametrize(
     ("family", "subnets"),
     (
-        (4, ("192.0.2.0/24", "198.51.100.0/24")),
-        (6, ("2001:db8:1::/64", "2001:db8:2::/64")),
+        (
+            4,
+            (
+                (1, "192.0.2.0/24", None),
+                (2, "198.51.100.0/24", "test-shared-network-4"),
+            ),
+        ),
+        (
+            6,
+            (
+                (1, "2001:db8:1::/64", None),
+                (2, "2001:db8:2::/64", "test-shared-network-6"),
+            ),
+        ),
     ),
 )
 def test_dhcp_subnets(
-    page: Page, kea: KeaClient, family: str, subnets: Sequence[str]
+    page: Page,
+    kea: KeaClient,
+    family: str,
+    subnets: Sequence[tuple[str, str, Optional[str]]],
+) -> None:
+    for i, (subnet_id, subnet, shared_network) in enumerate(subnets):
+        page.get_by_role("link", name=f"DHCPv{family} Subnets").click()
+        configure_table(page, "id", "subnet", "shared_network")
+        rows = page.locator("table > tbody > tr")
+        tds = rows.nth(i).locator("td")
+
+        # Check column data
+        # 0: ID
+        # 1: Subnet
+        # 2: Shared Network
+        expect(tds.nth(0)).to_contain_text(str(subnet_id))
+        expect(tds.nth(1)).to_contain_text(subnet)
+        expect(tds.nth(2)).to_contain_text(shared_network or "—")
+
+        with page.expect_response(re.compile(f"/leases{family}/")) as r:
+            page.get_by_role("link", name=subnet).click()
+            assert r.value.ok
+        expect(page.locator("#lease-search #id_q")).to_have_value(subnet)
+        expect(page.locator("div.ss-single-selected > span.placeholder")).to_have_text(
+            "Subnet"
+        )
+
+
+@pytest.mark.parametrize(
+    ("family", "all_data", "expected_data"),
+    (
+        (
+            4,
+            True,
+            [
+                {"ID": str(1), "Subnet": "192.0.2.0/24", "Shared Network": ""},
+                {
+                    "ID": str(2),
+                    "Subnet": "198.51.100.0/24",
+                    "Shared Network": "test-shared-network-4",
+                },
+            ],
+        ),
+        (
+            4,
+            False,
+            [
+                {"ID": str(1), "Subnet": "192.0.2.0/24"},
+                {"ID": str(2), "Subnet": "198.51.100.0/24"},
+            ],
+        ),
+        (
+            6,
+            True,
+            [
+                {"ID": str(1), "Subnet": "2001:db8:1::/64", "Shared Network": ""},
+                {
+                    "ID": str(2),
+                    "Subnet": "2001:db8:2::/64",
+                    "Shared Network": "test-shared-network-6",
+                },
+            ],
+        ),
+        (
+            6,
+            False,
+            [
+                {"ID": str(1), "Subnet": "2001:db8:1::/64"},
+                {"ID": str(2), "Subnet": "2001:db8:2::/64"},
+            ],
+        ),
+    ),
+)
+def test_dhcp_subnets_export_csv(
+    page: Page, kea: KeaClient, family: int, all_data: bool, expected_data: bool
 ) -> None:
     page.get_by_role("link", name=f"DHCPv{family} Subnets").click()
 
-    locator = page.locator(".tab-content")
-    for s in subnets:
-        expect(locator).to_contain_text(s)
+    if all_data is False:
+        configure_table(page, "id", "subnet")
 
-    with page.expect_response(re.compile(f"/leases{family}/")) as r:
-        page.get_by_role("link", name=subnets[0]).click()
-        assert r.value.ok
-    expect(page.locator("#lease-search #id_q")).to_have_value(subnets[0])
-    expect(page.locator("div.ss-single-selected > span.placeholder")).to_have_text(
-        "Subnet"
-    )
+    page.get_by_role("button", name="Export").click()
+    with page.expect_download() as dl:
+        page.get_by_role(
+            "link", name="All Data (CSV)" if all_data is True else "Current View"
+        ).click()
+    dl = dl.value
+    assert dl.suggested_filename.endswith(".csv")
+
+    with open(dl.path()) as f:
+        r = csv.DictReader(f)
+        have_rows = sorted(r, key=lambda x: x["ID"])
+        assert have_rows == expected_data
 
 
 @pytest.mark.parametrize("family", (4, 6))
@@ -527,6 +617,11 @@ def test_dhcp_subnets_configure_table(page: Page, kea: KeaClient, family: int) -
     configure_table(page, "subnet")
     expect(page.locator(".object-list > thead > tr > th > a")).to_have_text(
         ["Subnet", ""]
+    )
+
+    configure_table(page, "subnet", "shared_network")
+    expect(page.locator(".object-list > thead > tr > th > a")).to_have_text(
+        ["Subnet", "Shared Network", ""]
     )
 
 
