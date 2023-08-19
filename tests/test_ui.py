@@ -498,8 +498,8 @@ def test_server_status(page: Page, kea: KeaClient) -> None:
 @pytest.mark.parametrize(
     ("family", "subnets"),
     (
-        (4, ("192.0.2.0/24",)),
-        (6, ("2001:db8:1::/64",)),
+        (4, ("192.0.2.0/24", "198.51.100.0/24")),
+        (6, ("2001:db8:1::/64", "2001:db8:2::/64")),
     ),
 )
 def test_dhcp_subnets(
