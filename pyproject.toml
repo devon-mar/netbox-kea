@@ -9,16 +9,16 @@ packages = [{include = "netbox_kea"}]
 [tool.poetry.dependencies]
 python = "^3.8.1"
 requests = "^2"
-netaddr = "^0.8.0"
+netaddr = "^0.8"
 
 [tool.poetry.group.dev.dependencies]
-django-stubs = {extras = ["compatible-mypy"], version = "^4.2.0"}
-mypy = "^1.2.0"
+django-stubs = {extras = ["compatible-mypy"], version = "^4"}
+mypy = "^1.2"
 types-requests = "^2"
 pytest = "^7"
 pynetbox = "^7"
-flake8 = "^6.0.0"
-pytest-playwright = "^0.3.3"
+flake8 = "^6.0"
+pytest-playwright = "^0.3"
 
 [build-system]
 requires = ["poetry-core"]
