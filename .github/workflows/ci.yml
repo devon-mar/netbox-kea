@@ -13,7 +13,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#caching-packages
       - name: Install poetry
@@ -43,7 +43,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install poetry
         run: pipx install poetry
@@ -62,7 +62,7 @@ jobs:
         run: poetry run playwright install --with-deps
 
       - name: Checkout netbox-community/netbox-docker
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: netbox-community/netbox-docker
           path: netbox-docker
