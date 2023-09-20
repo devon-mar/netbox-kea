@@ -9,7 +9,7 @@ packages = [{include = "netbox_kea"}]
 [tool.poetry.dependencies]
 python = "^3.8.1"
 requests = "^2"
-netaddr = "^0.8"
+netaddr = ">= 0.8, <= 0.9"
 
 [tool.poetry.group.dev.dependencies]
 django-stubs = {extras = ["compatible-mypy"], version = "^4"}
