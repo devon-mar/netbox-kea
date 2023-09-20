@@ -19,11 +19,11 @@ jobs:
       - name: Install poetry
         run: pipx install poetry
 
-      - name: Setup Python 3.10
+      - name: Setup Python 3.11
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           cache: poetry
 
       - run: poetry install
@@ -38,8 +38,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - container_tag: v3.5
-            netbox_docker_tag: 2.6.1
+          - netbox: v3.5
+          - netbox: v3.6
 
     runs-on: ubuntu-latest
     steps:
@@ -48,11 +48,11 @@ jobs:
       - name: Install poetry
         run: pipx install poetry
 
-      - name: Setup Python 3.10
+      - name: Setup Python 3.11
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           cache: poetry
 
       - run: poetry install
@@ -61,20 +61,13 @@ jobs:
       - name: Ensure playwright browsers are installed
         run: poetry run playwright install --with-deps
 
-      - name: Checkout netbox-community/netbox-docker
-        uses: actions/checkout@v4
-        with:
-          repository: netbox-community/netbox-docker
-          path: netbox-docker
-          ref: ${{ matrix.netbox_docker_tag }}
-
       - name: Run poetry build
         run: poetry build
 
       - name: Run test_setup.sh
         run: ./tests/test_setup.sh
         env:
-          NETBOX_CONTAINER_TAG: ${{ matrix.container_tag }}
+          NETBOX_CONTAINER_TAG: ${{ matrix.netbox }}
 
       - name: Run pytest
         run: |
@@ -83,4 +76,4 @@ jobs:
       - name: Show Docker logs
         if: ${{ always() }}
         run: docker-compose logs
-        working-directory: ./netbox-docker/
+        working-directory: ./tests/docker/

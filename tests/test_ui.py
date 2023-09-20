@@ -122,13 +122,16 @@ def lease6_netbox_device(
     test_site: int,
     lease6: Dict[str, Any],
 ):
+    version = nb_api.version
+    device_role_key = "device_role" if version == "3.5" else "role"
+
     lease_ip = lease6["ip-address"]
 
     device = nb_api.dcim.devices.create(
         name=lease6["hostname"],
         device_type=test_device_type,
-        device_role=test_device_role,
         site=test_site,
+        **{device_role_key: test_device_role},
     )
 
     interface = nb_api.dcim.interfaces.create(
@@ -216,13 +219,16 @@ def lease4_netbox_device(
     test_site: int,
     lease4: Dict[str, Any],
 ):
+    version = nb_api.version
+    device_role_key = "device_role" if version == "3.5" else "role"
+
     lease_ip = lease4["ip-address"]
 
     device = nb_api.dcim.devices.create(
         name=lease4["hostname"],
         device_type=test_device_type,
-        device_role=test_device_role,
         site=test_site,
+        **{device_role_key: test_device_role},
     )
 
     interface = nb_api.dcim.interfaces.create(
