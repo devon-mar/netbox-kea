@@ -40,6 +40,7 @@ jobs:
         include:
           - netbox: v3.5
           - netbox: v3.6
+          - netbox: v3.7
 
     runs-on: ubuntu-latest
     steps:
