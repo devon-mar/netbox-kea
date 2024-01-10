@@ -321,10 +321,34 @@ def leases4_250(kea: KeaClient) -> None:
         )
 
 
+@pytest.fixture(scope="function")
+def netbox_user_permissions() -> list[dict[str, list[Any]]]:
+    return [{"actions": [], "object_types": []}]
+
+
 @pytest.fixture(scope="function", autouse=True)
 def netbox_login(
-    page: Page, netbox_url: str, netbox_username: str, netbox_password: str
+    page: Page,
+    netbox_url: str,
+    netbox_username: str,
+    netbox_password: str,
+    netbox_user_permissions: list[dict[str, list[Any]]],
+    nb_api: pynetbox.api,
 ) -> None:
+    if netbox_username != "admin":
+        nb_api.users.users.filter(username=netbox_username).delete()
+        nb_api.users.permissions.all(0).delete()
+        user = nb_api.users.users.create(
+            username=netbox_username, password=netbox_password
+        )
+        for permission in netbox_user_permissions:
+            nb_api.users.permissions.create(
+                name=netbox_username,
+                actions=permission["actions"],
+                object_types=permission["object_types"],
+                users=[user.id],
+            )
+
     page.goto(f"{netbox_url}/login")
     page.get_by_placeholder("Username").fill(netbox_username)
     page.get_by_placeholder("Password").fill(netbox_password)
@@ -422,18 +446,70 @@ def configure_table(page: Page, *selected_coumns: str) -> None:
     page.get_by_role("button", name="Save").click()
 
 
-def test_navigation(page: Page) -> None:
+@pytest.mark.parametrize(
+    ("netbox_username", "netbox_password", "netbox_user_permissions"),
+    [
+        ("admin", "admin", None),
+        (
+            "user",
+            "user",
+            [{"actions": ["view"], "object_types": ["netbox_kea.server"]}],
+        ),
+    ],
+)
+def test_navigation_view(page: Page) -> None:
     page.locator('a[href="#menuPlugins"]').click()
     page.locator('a.nav-link[href="/plugins/kea/servers/"]').click()
 
     expect(page).to_have_title(re.compile("^Servers.*"))
 
 
+@pytest.mark.parametrize(
+    ("netbox_username", "netbox_password", "netbox_user_permissions"),
+    [
+        ("admin", "admin", None),
+        (
+            "user",
+            "user",
+            [{"actions": ["view", "add"], "object_types": ["netbox_kea.server"]}],
+        ),
+    ],
+)
 def test_navigation_add(page: Page) -> None:
     page.locator('a[href="#menuPlugins"]').click()
     page.locator("#menuPlugins").get_by_title("Add").click()
 
     expect(page).to_have_title(re.compile("^Add a new server.*"))
+
+
+@pytest.mark.parametrize(
+    ("netbox_username", "netbox_password", "netbox_user_permissions"),
+    [
+        (
+            "user",
+            "user",
+            [],
+        ),
+    ],
+)
+def test_navigation_view_no_access(page: Page) -> None:
+    expect(page.locator('a[href="#menuPlugins"]')).to_have_count(0)
+
+
+@pytest.mark.parametrize(
+    ("netbox_username", "netbox_password", "netbox_user_permissions"),
+    [
+        (
+            "user",
+            "user",
+            [{"actions": ["view"], "object_types": ["netbox_kea.server"]}],
+        ),
+    ],
+)
+def test_navigation_add_no_access(page: Page) -> None:
+    page.locator('a[href="#menuPlugins"]').click()
+
+    expect(page.locator("#menuPlugins").get_by_title("Add")).to_have_count(0)
 
 
 def test_server_add_delete(
