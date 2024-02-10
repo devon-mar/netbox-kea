@@ -154,10 +154,12 @@ class GenericTable(BaseTable):
 class SubnetTable(GenericTable):
     id = tables.Column(verbose_name="ID")
     subnet = tables.Column(
-        linkify=lambda record, table: reverse(table.leases_view, args=[table.server_pk])
-        + f"?by=subnet&q={record['subnet']}"
-        if record.get("id")
-        else None,
+        linkify=lambda record, table: (
+            reverse(table.leases_view, args=[table.server_pk])
+            + f"?by=subnet&q={record['subnet']}"
+            if record.get("id")
+            else None
+        ),
     )
     shared_network = tables.Column(verbose_name="Shared Network")
     actions = ActionsColumn(SUBNET_ACTIONS)

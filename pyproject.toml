@@ -19,6 +19,7 @@ pytest = "^7"
 pynetbox = "^7"
 flake8 = "^7.0"
 pytest-playwright = "^0.4"
+black = "^24.1"
 
 [build-system]
 requires = ["poetry-core"]
