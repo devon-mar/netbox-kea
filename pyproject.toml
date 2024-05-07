@@ -18,7 +18,7 @@ types-requests = "^2"
 pytest = "^8"
 pynetbox = "^7"
 flake8 = "^7.0"
-pytest-playwright = "^0.4"
+pytest-playwright = "^0.5"
 black = "^24.1"
 
 [build-system]
