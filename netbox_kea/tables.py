@@ -1,6 +1,6 @@
 import django_tables2 as tables
 from django.urls import reverse
-from netbox.tables import BaseTable, BooleanColumn, NetBoxTable, ToggleColumn
+from netbox.tables import BaseTable, BooleanColumn, NetBoxTable, ToggleColumn, columns
 
 from netbox_kea.utilities import format_duration
 
@@ -183,8 +183,8 @@ class BaseLeaseTable(GenericTable):
     subnet_id = tables.Column(verbose_name="Subnet ID")
     hw_address = MonospaceColumn(verbose_name="Hardware Address")
     valid_lft = DurationColumn(verbose_name="Valid Lifetime")
-    cltt = tables.DateTimeColumn(verbose_name="Client Last Transaction Time")
-    expires_at = tables.DateTimeColumn(verbose_name="Expires At")
+    cltt = columns.DateTimeColumn(verbose_name="Client Last Transaction Time")
+    expires_at = columns.DateTimeColumn(verbose_name="Expires At")
     expires_in = DurationColumn(verbose_name="Expires In")
     state = tables.Column()
     actions = ActionsColumn(LEASE_ACTIONS)
