@@ -70,7 +70,14 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest -v
+          poetry run pytest --tracing=retain-on-failure -v
+
+      - name: Upload Playwright traces
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-traces
+          path: test-results/
 
       - name: Show Docker logs
         if: ${{ always() }}
