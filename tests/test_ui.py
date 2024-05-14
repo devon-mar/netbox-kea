@@ -349,9 +349,9 @@ def netbox_login(
                 users=[user.id],
             )
 
-    page.goto(f"{netbox_url}/login")
-    page.get_by_placeholder("Username").fill(netbox_username)
-    page.get_by_placeholder("Password").fill(netbox_password)
+    page.goto(f"{netbox_url}/login/")
+    page.get_by_label("Username").fill(netbox_username)
+    page.get_by_label("Password").fill(netbox_password)
     page.get_by_role("button", name="Sign In").click()
 
 
@@ -409,9 +409,10 @@ def test_cluster(nb_api: pynetbox.api):
 def search_lease(page: Page, version: Literal[4, 6], by: str, q: str) -> None:
     page.get_by_role("link", name=f"DHCPv{version} Leases").click()
     page.locator("#id_q").fill(q)
-    page.locator("span.ss-deselect").click()
-    page.locator("div.ss-main").click()
-    page.get_by_role("option", name=by, exact=True).click()
+    page.locator("#id_by + div.form-select").click()
+    page.locator("#id_by-ts-dropdown").get_by_role(
+        "option", name=by, exact=True
+    ).click()
     with page.expect_response(re.compile(f"/leases{version}/")) as r:
         page.get_by_role("button", name="Search").click()
         assert r.value.ok
@@ -424,9 +425,7 @@ def search_lease_related(page: Page, model: str) -> None:
 
 
 def expect_form_error_search(page: Page, b: bool) -> None:
-    expect(
-        page.locator("form > div").nth(0).locator("div.col > div.text-danger")
-    ).to_have_count(int(b))
+    expect(page.locator("#id_q + div.form-text.text-danger")).to_have_count(int(b))
 
 
 def configure_table(page: Page, *selected_coumns: str) -> None:
@@ -458,8 +457,8 @@ def configure_table(page: Page, *selected_coumns: str) -> None:
     ],
 )
 def test_navigation_view(page: Page) -> None:
-    page.locator('a[href="#menuPlugins"]').click()
-    page.locator('a.nav-link[href="/plugins/kea/servers/"]').click()
+    page.get_by_role("button", name="󰐱 Plugins").click()
+    page.get_by_role("link", name="Servers").click()
 
     expect(page).to_have_title(re.compile("^Servers.*"))
 
@@ -476,8 +475,9 @@ def test_navigation_view(page: Page) -> None:
     ],
 )
 def test_navigation_add(page: Page) -> None:
-    page.locator('a[href="#menuPlugins"]').click()
-    page.locator("#menuPlugins").get_by_title("Add").click()
+    page.get_by_role("button", name="󰐱 Plugins").click()
+    page.get_by_role("link", name="Servers").hover()
+    page.get_by_role("link", name="󱇬", exact=True).click()
 
     expect(page).to_have_title(re.compile("^Add a new server.*"))
 
@@ -493,7 +493,7 @@ def test_navigation_add(page: Page) -> None:
     ],
 )
 def test_navigation_view_no_access(page: Page) -> None:
-    expect(page.locator('a[href="#menuPlugins"]')).to_have_count(0)
+    expect(page.get_by_role("button", name="󰐱 Plugins")).to_have_count(0)
 
 
 @pytest.mark.parametrize(
@@ -507,9 +507,9 @@ def test_navigation_view_no_access(page: Page) -> None:
     ],
 )
 def test_navigation_add_no_access(page: Page) -> None:
-    page.locator('a[href="#menuPlugins"]').click()
-
-    expect(page.locator("#menuPlugins").get_by_title("Add")).to_have_count(0)
+    page.get_by_role("button", name="󰐱 Plugins").click()
+    page.get_by_role("link", name="Servers").hover()
+    expect(page.get_by_role("link", name="󱇬", exact=True)).to_have_count(0)
 
 
 def test_server_add_delete(
@@ -519,8 +519,8 @@ def test_server_add_delete(
     page.goto(f"{plugin_base}/servers/add/")
     expect(page).to_have_title(re.compile("^Add a new server.*"))
 
-    page.get_by_placeholder("Name", exact=True).fill(server_name)
-    page.get_by_placeholder("Server URL", exact=True).fill(kea_url)
+    page.get_by_label("Name", exact=True).fill(server_name)
+    page.get_by_label("Server URL", exact=True).fill(kea_url)
     page.get_by_role("button", name="Create", exact=True).click()
 
     expect(page).to_have_title(re.compile(f"^{server_name}"))
@@ -555,7 +555,7 @@ def test_server_bulk_delete(
 def test_server_edit(page: Page, kea: KeaClient) -> None:
     new_name = "a_new_name"
     page.get_by_role("button", name="Edit").click()
-    page.get_by_placeholder("Name", exact=True).fill(new_name)
+    page.get_by_label("Name", exact=True).fill(new_name)
     page.get_by_role("button", name="Save").click()
     expect(page).to_have_title(re.compile(f"^{new_name}"))
 
@@ -619,10 +619,10 @@ def test_dhcp_subnets(
         with page.expect_response(re.compile(f"/leases{family}/")) as r:
             page.get_by_role("link", name=subnet).click()
             assert r.value.ok
-        expect(page.locator("#lease-search #id_q")).to_have_value(subnet)
-        expect(page.locator("div.ss-single-selected > span.placeholder")).to_have_text(
-            "Subnet"
-        )
+        expect(page.locator("#id_q")).to_have_value(subnet)
+        expect(
+            page.locator("#id_by + div.form-select > div.ts-control > div.item")
+        ).to_have_text("Subnet")
 
 
 @pytest.mark.parametrize(
@@ -752,9 +752,10 @@ def test_dhcp_lease_invalid_search_values(
 ) -> None:
     page.get_by_role("link", name=f"DHCPv{version} Leases").click()
     page.locator("#id_q").fill(q)
-    page.locator("span.ss-deselect").click()
-    page.locator("div.ss-main").click()
-    page.get_by_role("option", name=by, exact=True).click()
+    page.locator("#id_by + div.form-select").click()
+    page.locator("#id_by-ts-dropdown").get_by_role(
+        "option", name=by, exact=True
+    ).click()
     page.get_by_role("button", name="Search").click()
     expect_form_error_search(page, True)
     expect(page.locator("div.table-container")).to_have_count(0)
@@ -795,13 +796,14 @@ def test_dhcp_lease_all_columns(
         )
 
         def check():
-            expect(page.locator(".object-list > tbody > tr > td")).to_have_text(
+            cltt = datetime.utcfromtimestamp(lease["cltt"])
+            expect(page.locator("table.object-list > tbody > tr > td")).to_have_text(
                 [
                     re.compile(".*"),  # select
                     lease["ip-address"],
                     lease["hostname"],
                     lease["hw-address"],
-                    datetime.utcfromtimestamp(lease["cltt"]).strftime("%Y-%m-%d %H:%M"),
+                    f"{cltt.date().isoformat()} {cltt.time().isoformat()}",
                     str(lease["state"]),
                     str(lease["subnet-id"]),
                     "01:00:00",
@@ -831,13 +833,14 @@ def test_dhcp_lease_all_columns(
         )
 
         def check():
-            expect(page.locator(".object-list > tbody > tr > td")).to_have_text(
+            cltt = datetime.utcfromtimestamp(lease["cltt"])
+            expect(page.locator("table.object-list > tbody > tr > td")).to_have_text(
                 [
                     "",  # select
                     lease["ip-address"],
                     lease["hostname"],
                     lease["hw-address"],
-                    datetime.utcfromtimestamp(lease["cltt"]).strftime("%Y-%m-%d %H:%M"),
+                    f"{cltt.date().isoformat()} {cltt.time().isoformat()}",
                     str(lease["state"]),
                     str(lease["subnet-id"]),
                     "01:00:00",
@@ -1166,7 +1169,7 @@ def test_lease_search_by_subnet(
             check_count(lease_count % per_page)
         else:
             expect(page.locator(".object-list > tbody > tr > td")).to_have_text(
-                "No leases found."
+                "— No leases found. —"
             )
 
     expect(page.get_by_role("button", name="Next")).to_be_disabled()
@@ -1227,8 +1230,10 @@ def test_filter_servers_by_tag(
 
     page.goto(f"{plugin_base}/servers/")
     page.get_by_role("tab", name="Filters").click()
-    page.get_by_text("Select Tags").click()
-    page.get_by_role("option", name=f"{test_tag} (1)").click()
+    page.locator("#id_tag + div.form-select").click()
+    page.locator("#id_tag-ts-dropdown").get_by_role(
+        "option", name=f"{test_tag} (1)"
+    ).click()
     page.get_by_role("button", name=re.compile("Search")).click()
     expect(page.get_by_text("Showing 1-1 of 1")).to_have_count(1)
 
