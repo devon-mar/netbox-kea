@@ -6,7 +6,7 @@ from netbox_kea.utilities import format_duration
 
 from .models import Server
 
-SUBNET_ACTIONS = """<span class="dropdown">
+SUBNET_ACTIONS = """<span class="btn-group dropdown">
   <a class="btn btn-sm btn-secondary dropdown-toggle" href="#" type="button" data-bs-toggle="dropdown">
   <i class="mdi mdi-magnify"></i></a>
   <ul class="dropdown-menu">
@@ -31,7 +31,7 @@ SUBNET_ACTIONS = """<span class="dropdown">
 """  # noqa: E501
 
 
-LEASE_ACTIONS = """<span class="dropdown">
+LEASE_ACTIONS = """<span class="btn-group dropdown">
     <a class="btn btn-sm btn-secondary dropdown-toggle" href="#" type="button" data-bs-toggle="dropdown">
     <i class="mdi mdi-magnify"></i></a>
     <ul class="dropdown-menu">

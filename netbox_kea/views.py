@@ -10,7 +10,6 @@ from django.urls import reverse
 from netaddr import IPAddress, IPNetwork
 from netbox.views import generic
 from utilities.exceptions import AbortRequest
-from utilities.htmx import is_htmx
 from utilities.paginator import EnhancedPaginator, get_paginate_count
 from utilities.views import GetReturnURLMixin, ViewTab, register_model_view
 
@@ -287,7 +286,7 @@ class BaseServerLeasesView(generic.ObjectView):
         if "export" in request.GET:
             return self.get_export(request, **kwargs)
 
-        if not is_htmx(request):
+        if not request.htmx:
             return super().get(request, **kwargs)
 
         try:

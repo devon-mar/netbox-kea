@@ -1,19 +1,24 @@
-from graphene import ObjectType
-from netbox.graphql.fields import ObjectField, ObjectListField
-from netbox.graphql.types import NetBoxObjectType
+import strawberry
+import strawberry_django
 
-from .models import Server
-
-
-class ServerType(NetBoxObjectType):
-    class Meta:
-        model = Server
-        fields = "__all__"
+from . import models
 
 
-class Query(ObjectType):
-    server = ObjectField(ServerType)
-    server_list = ObjectListField(ServerType)
+@strawberry_django.type(
+    models.Server,
+    fields="__all__",
+)
+class ServerType:
+    pass
 
 
-schema = Query
+@strawberry.type
+class Query:
+    @strawberry.field
+    def server(self, id: int) -> ServerType:
+        return models.Server.objects.get(pk=id)
+
+    server_list: list[ServerType] = strawberry_django.field()
+
+
+schema = [Query]

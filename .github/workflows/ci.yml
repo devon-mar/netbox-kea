@@ -19,11 +19,11 @@ jobs:
       - name: Install poetry
         run: pipx install poetry
 
-      - name: Setup Python 3.11
+      - name: Setup Python 3.12
         id: setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: poetry
 
       - run: poetry install
@@ -38,9 +38,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - netbox: v3.5
-          - netbox: v3.6
-          - netbox: v3.7
+          - netbox: v4.0
 
     runs-on: ubuntu-latest
     steps:
@@ -49,11 +47,11 @@ jobs:
       - name: Install poetry
         run: pipx install poetry
 
-      - name: Setup Python 3.11
+      - name: Setup Python 3.12
         id: setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: poetry
 
       - run: poetry install

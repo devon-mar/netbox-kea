@@ -28,3 +28,4 @@ class ServerSerializer(NetBoxModelSerializer):
             "tags",
             "last_updated",
         )
+        brief_fields = ("id", "url", "name", "server_url")

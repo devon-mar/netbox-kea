@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from netaddr import EUI, AddrFormatError, IPAddress, IPNetwork, mac_unix_expanded
 from netbox.forms import NetBoxModelFilterSetForm, NetBoxModelForm
-from utilities.forms import BOOLEAN_WITH_BLANK_CHOICES, BootstrapMixin
+from utilities.forms import BOOLEAN_WITH_BLANK_CHOICES
 from utilities.forms.fields import TagFilterField
 
 from . import constants
@@ -55,7 +55,7 @@ class ServerFilterForm(NetBoxModelFilterSetForm):
     )
 
 
-class BaseLeasesSarchForm(BootstrapMixin, forms.Form):
+class BaseLeasesSarchForm(forms.Form):
     q = forms.CharField(label="Search")
     page = forms.CharField(required=False, widget=VeryHiddenInput)
 
@@ -102,18 +102,18 @@ class BaseLeasesSarchForm(BootstrapMixin, forms.Form):
                 raise ValidationError(
                     {"q": f"Invalid IPv{ip_version} address: {q}"}
                 ) from e
-        elif by in (constants.BY_HW_ADDRESS):
+        elif by == constants.BY_HW_ADDRESS:
             try:
                 cleaned_data["q"] = str(EUI(q, version=48, dialect=mac_unix_expanded))
             except (AddrFormatError, TypeError, ValueError) as e:
                 raise ValidationError({"q": f"Invalid hardware address: {q}"}) from e
-        elif by in constants.BY_DUID:
+        elif by == constants.BY_DUID:
             if not is_hex_string(
                 q, constants.DUID_MIN_OCTETS, constants.DUID_MAX_OCTETS
             ):
                 raise ValidationError({"q": f"Invalid DUID: {q}"})
             cleaned_data["q"] = q.replace("-", "")
-        elif by in constants.BY_CLIENT_ID:
+        elif by == constants.BY_CLIENT_ID:
             if not is_hex_string(
                 q, constants.CLIENT_ID_MIN_OCTETS, constants.DUID_MAX_OCTETS
             ):
