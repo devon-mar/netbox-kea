@@ -78,7 +78,7 @@ services:
 
   # postgres
   postgres:
-    image: docker.io/postgres:15-alpine
+    image: docker.io/postgres:16-alpine
     volumes:
       - netbox-postgres-data:/var/lib/postgresql/data
     environment:
