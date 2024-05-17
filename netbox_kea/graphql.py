@@ -1,5 +1,6 @@
 import strawberry
 import strawberry_django
+from netbox.graphql.types import NetBoxObjectType
 
 from . import models
 
@@ -8,7 +9,7 @@ from . import models
     models.Server,
     fields="__all__",
 )
-class ServerType:
+class ServerType(NetBoxObjectType):
     pass
 
 

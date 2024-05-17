@@ -15,14 +15,8 @@ from . import constants
 from .kea import KeaClient
 
 
-@pytest.fixture(autouse=True)
-def clear_leases(kea_client: KeaClient) -> None:
-    kea_client.command("lease4-wipe", service=["dhcp4"], check=(0, 3))
-    kea_client.command("lease6-wipe", service=["dhcp6"], check=(0, 3))
-
-
-@pytest.fixture(autouse=True)
-def reset_user_config_tables(nb_api: pynetbox.api) -> None:
+@pytest.fixture
+def requests_session(nb_api: pynetbox.api) -> requests.Session:
     s = requests.Session()
     s.headers.update(
         {
@@ -31,14 +25,33 @@ def reset_user_config_tables(nb_api: pynetbox.api) -> None:
             "Accept": "application/json",
         }
     )
-    r = s.get(url=f"{nb_api.base_url}/users/config/")
+    return s
+
+
+@pytest.fixture(autouse=True)
+def clear_leases(kea_client: KeaClient) -> None:
+    kea_client.command("lease4-wipe", service=["dhcp4"], check=(0, 3))
+    kea_client.command("lease6-wipe", service=["dhcp6"], check=(0, 3))
+
+
+@pytest.fixture(autouse=True)
+def reset_user_preferences(
+    requests_session: requests.Session, nb_api: pynetbox.api
+) -> None:
+    r = requests_session.get(url=f"{nb_api.base_url}/users/config/")
     r.raise_for_status()
     tables_config = r.json().get("tables", {})
 
     # pynetbox doesn't support this endpoint
-    s.patch(
+    requests_session.patch(
         url=f"{nb_api.base_url}/users/config/",
         json={"tables": {k: {} for k in tables_config}},
+    ).raise_for_status()
+
+    # restore pagination
+    requests_session.patch(
+        url=f"{nb_api.base_url}/users/config/",
+        json={"pagination": {"placement": "bottom"}},
     ).raise_for_status()
 
 
@@ -619,10 +632,10 @@ def test_dhcp_subnets(
         with page.expect_response(re.compile(f"/leases{family}/")) as r:
             page.get_by_role("link", name=subnet).click()
             assert r.value.ok
-        expect(page.locator("#id_q")).to_have_value(subnet)
+        expect(page.locator("#id_q")).to_have_value(str(subnet_id))
         expect(
             page.locator("#id_by + div.form-select > div.ts-control > div.item")
-        ).to_have_text("Subnet")
+        ).to_have_text("Subnet ID")
 
 
 @pytest.mark.parametrize(
@@ -784,7 +797,6 @@ def test_dhcp_lease_all_columns(
             "hostname",
             "hw_address",
             "cltt",
-            "state",
             "subnet_id",
             "valid_lft",
             "duid",
@@ -804,7 +816,6 @@ def test_dhcp_lease_all_columns(
                     lease["hostname"],
                     lease["hw-address"],
                     f"{cltt.date().isoformat()} {cltt.time().isoformat()}",
-                    str(lease["state"]),
                     str(lease["subnet-id"]),
                     "01:00:00",
                     lease["duid"],
@@ -824,7 +835,6 @@ def test_dhcp_lease_all_columns(
             "hostname",
             "hw_address",
             "cltt",
-            "state",
             "subnet_id",
             "valid_lft",
             "expires_at",
@@ -841,7 +851,6 @@ def test_dhcp_lease_all_columns(
                     lease["hostname"],
                     lease["hw-address"],
                     f"{cltt.date().isoformat()} {cltt.time().isoformat()}",
-                    str(lease["state"]),
                     str(lease["subnet-id"]),
                     "01:00:00",
                     re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}"),
@@ -1314,3 +1323,52 @@ def test_lease_to_vm(
     page.goto(server_url)
     search_lease(page, version, "IP Address", lease_ip)
     search_lease_related(page, "VM interfaces")
+
+
+@pytest.mark.parametrize("placement", ("top", "bottom", "both"))
+@pytest.mark.parametrize("version", (6, 4))
+def test_lease_pagination_location(
+    page: Page,
+    requests_session: requests.Session,
+    nb_api: pynetbox.api,
+    with_test_server: None,
+    request: pytest.FixtureRequest,
+    version: Literal[6, 4],
+    placement: Literal["top", "bottom", "both"],
+) -> None:
+    placement = "bottom"
+    lease_args = request.getfixturevalue(f"lease{version}")
+    ip = lease_args["ip-address"]
+
+    # pynetbox doesn't support this endpoint
+    requests_session.patch(
+        url=f"{nb_api.base_url}/users/config/",
+        json={"pagination": {"placement": placement}},
+    ).raise_for_status()
+
+    search_lease(page, version, "IP Address", ip)
+
+    counts = page.get_by_text(re.compile(r"^Showing \d+ lease\(s\)$"))
+
+    if placement == "both":
+        expect(counts).to_have_count(2)
+        count_y_top = counts.nth(0).bounding_box()["y"]
+        count_y_bottom = counts.nth(0).bounding_box()["y"]
+        table_y = page.get_by_role("link", name="IP Address").bounding_box()["y"]
+
+        assert count_y_top < table_y
+        assert count_y_bottom > table_y
+    else:
+        expect(counts).to_have_count(1)
+        count_y = page.get_by_text(
+            re.compile(r"^Showing \d+ lease\(s\)$")
+        ).bounding_box()["y"]
+        table_y = page.get_by_role("link", name="IP Address").bounding_box()["y"]
+
+        match placement:
+            case "top":
+                assert count_y < table_y
+            case "bottom":
+                assert count_y > table_y
+            case _:
+                assert False

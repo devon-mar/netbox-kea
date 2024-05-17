@@ -1,6 +1,6 @@
 import logging
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from django.contrib import messages
 from django.http import HttpResponse
@@ -60,7 +60,7 @@ class ServerStatusView(generic.ObjectView):
     tab = ViewTab(label="Status", weight=1000)
     template_name = "netbox_kea/server_status.html"
 
-    def _get_ca_status(self, client: KeaClient) -> Dict[str, Any]:
+    def _get_ca_status(self, client: KeaClient) -> dict[str, Any]:
         """Get the control agent status"""
         status = client.command("status-get")
         args = status[0]["arguments"]
@@ -79,8 +79,8 @@ class ServerStatusView(generic.ObjectView):
 
     def _get_dhcp_status(
         self, server: Server, client: KeaClient
-    ) -> Dict[str, Dict[str, Any]]:
-        resp: Dict[str, Dict[str, Any]] = {}
+    ) -> dict[str, dict[str, Any]]:
+        resp: dict[str, dict[str, Any]] = {}
 
         # Map of name to pretty name
         service_names = {"dhcp6": "DHCPv6", "dhcp4": "DHCPv4"}
@@ -142,7 +142,7 @@ class ServerStatusView(generic.ObjectView):
 
     def _get_statuses(
         self, server: Server, client: KeaClient
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         return {
             "Control Agent": self._get_ca_status(client),
             **self._get_dhcp_status(server, client),
@@ -150,7 +150,7 @@ class ServerStatusView(generic.ObjectView):
 
     def get_extra_context(
         self, request: HttpResponse, instance: Server
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {"statuses": self._get_statuses(instance, instance.get_client())}
 
 
@@ -160,7 +160,7 @@ class BaseServerLeasesView(generic.ObjectView):
 
     def get_leases_page(
         self, client: KeaClient, subnet: IPNetwork, page: Optional[str], per_page: int
-    ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+    ) -> tuple[list[dict[str, Any]], Optional[str]]:
         if page:
             frm = page
         elif int(subnet.network) == 0:
@@ -180,21 +180,22 @@ class BaseServerLeasesView(generic.ObjectView):
 
         args = resp[0]["arguments"]
         assert args is not None
-        subnet_leases = args["leases"]
-        next = (
-            f"{subnet_leases[-1]['ip-address']}" if args["count"] == per_page else None
-        )
-        for i, lease in enumerate(args["leases"]):
+
+        raw_leases = args["leases"]
+        next = f"{raw_leases[-1]['ip-address']}" if args["count"] == per_page else None
+        for i, lease in enumerate(raw_leases):
             lease_ip = IPAddress(lease["ip-address"])
             if lease_ip not in subnet:
-                subnet_leases = subnet_leases[:i]
+                raw_leases = raw_leases[:i]
                 next = None
                 break
 
-        return format_leases(subnet_leases), next
+        subnet_leases = format_leases(raw_leases)
 
-    def get_leases(self, client: KeaClient, q: Any, by: str) -> List[Dict[str, Any]]:
-        arguments: Dict[str, Any]
+        return subnet_leases, next
+
+    def get_leases(self, client: KeaClient, q: Any, by: str) -> list[dict[str, Any]]:
+        arguments: dict[str, Any]
         command = ""
         multiple = True
 
@@ -238,7 +239,7 @@ class BaseServerLeasesView(generic.ObjectView):
 
     def get_extra_context(
         self, request: HttpRequest, _instance: Server
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # For non-htmx requests.
 
         table = self.table([], user=request.user)
@@ -258,7 +259,7 @@ class BaseServerLeasesView(generic.ObjectView):
         client = instance.get_client()
         if by == constants.BY_SUBNET:
             leases = []
-            page = ""  # start from the beginning
+            page: Optional[str] = ""  # start from the beginning
             while page is not None:
                 page_leases, page = self.get_leases_page(
                     client,
@@ -276,7 +277,7 @@ class BaseServerLeasesView(generic.ObjectView):
         )
 
     def get(self, request: HttpRequest, **kwargs) -> HttpResponse:
-        logger = logging.getLogger("netbox_kea.views.BaseServerDHCPLeasesVie")
+        logger = logging.getLogger("netbox_kea.views.BaseServerDHCPLeasesView")
 
         instance: Server = self.get_object(**kwargs)
 
@@ -336,7 +337,7 @@ class BaseServerLeasesView(generic.ObjectView):
                 },
             )
         except Exception as e:
-            logger.exception("Got exception on DHCP leases HTMX handler")
+            logger.exception("exception on DHCP leases HTMX handler")
             return render(
                 request,
                 "netbox_kea/exception_htmx.html",
@@ -362,6 +363,15 @@ class ServerLeases4View(BaseServerLeasesView):
     form = forms.Leases4SearchForm
     table = tables.LeaseTable4
     dhcp_version = 4
+
+
+class FakeLeaseModelMeta:
+    verbose_name_plural = "leases"
+
+
+# Fake model to allow us to use the bulk_delete.html template.
+class FakeLeaseModel:
+    _meta = FakeLeaseModelMeta
 
 
 class BaseServerLeasesDeleteView(
@@ -391,14 +401,15 @@ class BaseServerLeasesDeleteView(
 
         lease_ips = form.cleaned_data["pk"]
         if "_confirm" not in request.POST:
-            if len(lease_ips) == 0:
-                messages.warning(request, "No leases were selected for deletion.")
-                return redirect(self.get_return_url(request, obj=instance))
             return render(
                 request,
-                "netbox_kea/server_leases_delete.html",
+                "generic/bulk_delete.html",
                 {
-                    "lease_ips": form.cleaned_data["pk"],
+                    "model": FakeLeaseModel,
+                    "table": tables.LeaseDeleteTable(
+                        ({"ip": ip} for ip in lease_ips),
+                        orderable=False,
+                    ),
                     "form": form,
                     "return_url": self.get_return_url(request, obj=instance),
                 },
@@ -429,39 +440,59 @@ class ServerLeases4DeleteView(BaseServerLeasesDeleteView):
     dhcp_version = 4
 
 
-class BaseServerDHCPSubnetsView(generic.ObjectView, metaclass=ABCMeta):
+class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
+    table = tables.SubnetTable
     queryset = Server.objects.all()
     template_name = "netbox_kea/server_dhcp_subnets.html"
 
-    def get_subnet_table(
-        self, request: HttpRequest, instance: Server
-    ) -> tables.SubnetTable:
-        client = instance.get_client()
-        subnets = self.get_subnets(client)
-        table = tables.SubnetTable(
-            f"plugins:netbox_kea:server_leases{self.dhcp_version}",
-            instance.pk,
-            subnets,
-            user=request.user,
-        )
-        table.configure(request)
-        return table
+    def get_children(
+        self, request: HttpRequest, parent: Server
+    ) -> list[dict[str, Any]]:
+        return self.get_subnets(parent)
 
-    def get_extra_context(
-        self, request: HttpRequest, instance: Server
-    ) -> Dict[str, Any]:
-        return {"table": self.get_subnet_table(request, instance)}
+    def get_subnets(self, server: Server) -> list[dict[str, Any]]:
+        client = server.get_client()
+        config = client.command("config-get", service=[f"dhcp{self.dhcp_version}"])
+        assert config[0]["arguments"] is not None
+        subnets = config[0]["arguments"][f"Dhcp{self.dhcp_version}"][
+            f"subnet{self.dhcp_version}"
+        ]
+        subnet_list = [
+            dict(
+                id=s["id"],
+                subnet=s["subnet"],
+                dhcp_version=self.dhcp_version,
+                server_pk=server.pk,
+            )
+            for s in subnets
+            if "id" in s and "subnet" in s
+        ]
+
+        for sn in config[0]["arguments"][f"Dhcp{self.dhcp_version}"]["shared-networks"]:
+            for s in sn[f"subnet{self.dhcp_version}"]:
+                subnet_list.append(
+                    dict(
+                        id=s["id"],
+                        subnet=s["subnet"],
+                        shared_network=sn["name"],
+                        dhcp_version=self.dhcp_version,
+                        server_pk=server.pk,
+                    )
+                )
+
+        return subnet_list
 
     def get(self, request: HttpRequest, **kwargs) -> HttpResponse:
         instance = self.get_object(**kwargs)
-
         if resp := check_dhcp_enabled(instance, self.dhcp_version):
             return resp
 
         if "export" not in request.GET:
             return super().get(request, **kwargs)
 
-        table = self.get_subnet_table(request, instance)
+        child_objects = self.get_children(request, instance)
+        table_data = self.prep_table_data(request, child_objects, instance)
+        table = self.get_table(table_data, request, False)
 
         return export_table(
             table,
@@ -477,24 +508,6 @@ class ServerDHCP6SubnetsView(BaseServerDHCPSubnetsView):
     )
     dhcp_version = 6
 
-    def get_subnets(self, client: KeaClient) -> List[Dict[str, Any]]:
-        config = client.command("config-get", service=["dhcp6"])
-        assert config[0]["arguments"] is not None
-        subnets = config[0]["arguments"]["Dhcp6"]["subnet6"]
-        subnet_list = [
-            {"id": s["id"], "subnet": s["subnet"]}
-            for s in subnets
-            if "id" in s and "subnet" in s
-        ]
-
-        for sn in config[0]["arguments"]["Dhcp6"]["shared-networks"]:
-            for s in sn["subnet6"]:
-                subnet_list.append(
-                    dict(id=s["id"], subnet=s["subnet"], shared_network=sn["name"])
-                )
-
-        return subnet_list
-
 
 @register_model_view(Server, "subnets4")
 class ServerDHCP4SubnetsView(BaseServerDHCPSubnetsView):
@@ -502,21 +515,3 @@ class ServerDHCP4SubnetsView(BaseServerDHCPSubnetsView):
         label="DHCPv4 Subnets", weight=1040, is_enabled=lambda s: s.dhcp4
     )
     dhcp_version = 4
-
-    def get_subnets(self, client: KeaClient) -> List[Dict[str, Any]]:
-        config = client.command("config-get", service=["dhcp4"])
-        assert config[0]["arguments"] is not None
-        subnets = config[0]["arguments"]["Dhcp4"]["subnet4"]
-        subnet_list = [
-            {"id": s["id"], "subnet": s["subnet"]}
-            for s in subnets
-            if "id" in s and "subnet" in s
-        ]
-
-        for sn in config[0]["arguments"]["Dhcp4"]["shared-networks"]:
-            for s in sn["subnet4"]:
-                subnet_list.append(
-                    dict(id=s["id"], subnet=s["subnet"], shared_network=sn["name"])
-                )
-
-        return subnet_list

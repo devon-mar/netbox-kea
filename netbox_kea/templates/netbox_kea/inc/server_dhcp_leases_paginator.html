@@ -1,0 +1,35 @@
+{% load helpers %}
+<div class="d-flex justify-content-between align-items-center border-{% if placement == "top" %}bottom{% else %}top{% endif %} p-2">
+  {% if paginate %}
+    <div>
+      <a
+        class="btn btn-sm btn-outline-secondary{% if not next_page %} disabled{% endif %}"
+        role="button"
+        {% if next_page %}
+        hx-get="{% querystring request page=next_page %}"
+        hx-indicator="#next-indicator"
+        {% else %}
+        aria-disabled="true"
+        {% endif %}
+      >Next</a>
+      <div id="next-indicator" class="spinner-border spinner-border-sm d-inline-block align-middle htmx-indicator" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+  </div>
+  {% endif %}
+  <small class="text-end text-muted">Showing {{ table.rows|length }} lease(s)</small>
+  {% if paginate %}
+  <nav class="text-end" aria-label="Pagination options">
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        Per Page
+      </button>
+      <div class="dropdown-menu">
+        {% for n in page_lengths %}
+          <a href="#" hx-get="{% querystring request per_page=n %}" class="dropdown-item">{{ n }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </nav>
+{% endif %}
+</div>

@@ -1,28 +1,25 @@
-{% extends "generic/object.html" %}
-{% load helpers %}
-{% load render_table from django_tables2 %}
+{% extends "generic/object_children.html" %}
 
-{% block content %}
-  {% include "netbox_kea/inc/configure_table.html" with table_modal="SubnetTable_config" %}
-  <div class="card">
-    <div class="card-body">
-      {% render_table table "inc/table_htmx.html" %}
-    </div>
-  </div>
-  <div class="d-print-none mt-2 d-flex justify-content-end">
-    <div class="dropdown">
-      <button type="button" class="btn btn-sm btn-purple dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        <i class="mdi mdi-download"></i>&nbsp;Export
-      </button>
-      <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="?export=table">Current View</a></li>
-        <li><a class="dropdown-item" href="?export">All Data (CSV)</a></li>
-      </ul>
-    </div>
-  </div>
-{% endblock %}
-
-{% block modals %}
+{% block head %}
   {{ block.super }}
-  {% table_config_form table %}
+  <style type="text/css">
+    div.quicksearch{
+      display: none
+    }
+    nav.text-end[aria-label="Pagination optoins"]{
+      display: none
+    }
+  </style>
 {% endblock %}
+
+{% block bulk_controls %}
+<div class="dropdown d-flex justify-content-end">
+  <button type="button" class="btn btn-purple dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <i class="mdi mdi-download"></i> Export
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end" style="">
+    <li><a class="dropdown-item" href="?export=table">Current View</a></li>
+    <li><a class="dropdown-item" href="?export">All Data (CSV)</a></li>
+  </ul>
+</div>
+{% endblock bulk_controls %}

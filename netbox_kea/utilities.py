@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Literal, Optional
+from typing import Any, Callable, Literal, Optional
 
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -20,7 +20,7 @@ def format_duration(s: Optional[int]) -> Optional[str]:
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 
-def _enrich_lease(now: datetime, lease: Dict[str, Any]) -> Dict[str, Any]:
+def _enrich_lease(now: datetime, lease: dict[str, Any]) -> dict[str, Any]:
     """Add expires at and expires in to a lease."""
 
     # Need to replace "-" so we can access the values in a template
@@ -40,7 +40,7 @@ def _enrich_lease(now: datetime, lease: Dict[str, Any]) -> Dict[str, Any]:
     return lease
 
 
-def format_leases(leases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def format_leases(leases: list[dict[str, Any]]) -> list[dict[str, Any]]:
     now = datetime.now()
     return [_enrich_lease(now, ls) for ls in leases]
 

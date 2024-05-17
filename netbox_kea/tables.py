@@ -10,9 +10,9 @@ SUBNET_ACTIONS = """<span class="btn-group dropdown">
   <a class="btn btn-sm btn-secondary dropdown-toggle" href="#" type="button" data-bs-toggle="dropdown">
   <i class="mdi mdi-magnify"></i></a>
   <ul class="dropdown-menu">
-    {% if record.id %}
+    {% if record.pk %}
     <li>
-      <a href="{% url "ipam:prefix" pk=record.id %}" class="dropdown-item">
+      <a href="{% url "ipam:prefix" pk=record.pk %}" class="dropdown-item">
         <i class="mdi mdi-open-in-app" aria-hidden="true" title="View prefix"></i>
         View prefix
       </a>
@@ -127,52 +127,31 @@ class GenericTable(BaseTable):
         empty_text = "No rows"
         fields = ()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     @property
     def objects_count(self):
         return len(self.data)
-
-    def configure(self, request):
-        # Save ordering preference
-        if request.user.is_authenticated:
-            table_name = self.__class__.__name__
-            if self.prefixed_order_by_field in request.GET:
-                # If an ordering has been specified as a query parameter, save it as the
-                # user's preferred ordering for this table.
-                ordering = request.GET.getlist(self.prefixed_order_by_field)
-                request.user.config.set(
-                    f"tables.{table_name}.ordering", ordering, commit=True
-                )
-            elif ordering := request.user.config.get(f"tables.{table_name}.ordering"):
-                # If no ordering has been specified,
-                # set the preferred ordering (if any).
-                self.order_by = ordering
 
 
 class SubnetTable(GenericTable):
     id = tables.Column(verbose_name="ID")
     subnet = tables.Column(
         linkify=lambda record, table: (
-            reverse(table.leases_view, args=[table.server_pk])
-            + f"?by=subnet&q={record['subnet']}"
+            reverse(
+                f"plugins:netbox_kea:server_leases{record['dhcp_version']}",
+                args=[record["server_pk"]],
+            )
+            + f"?by=subnet_id&q={record['id']}"
             if record.get("id")
             else None
         ),
     )
     shared_network = tables.Column(verbose_name="Shared Network")
-    actions = ActionsColumn(SUBNET_ACTIONS)
+    actions = columns.ActionsColumn(actions=tuple(), extra_buttons=SUBNET_ACTIONS)
 
-    class Meta(GenericTable.Meta):
+    class Meta(NetBoxTable.Meta):
         empty_text = "No subnets"
         fields = ("id", "subnet", "shared_network", "actions")
         default_columns = ("id", "subnet", "shared_network")
-
-    def __init__(self, leases_view: str, server_pk: int, *args, **kwargs):
-        self.leases_view = leases_view
-        self.server_pk = server_pk
-        super().__init__(*args, **kwargs)
 
 
 class BaseLeaseTable(GenericTable):
@@ -186,7 +165,6 @@ class BaseLeaseTable(GenericTable):
     cltt = columns.DateTimeColumn(verbose_name="Client Last Transaction Time")
     expires_at = columns.DateTimeColumn(verbose_name="Expires At")
     expires_in = DurationColumn(verbose_name="Expires In")
-    state = tables.Column()
     actions = ActionsColumn(LEASE_ACTIONS)
 
     class Meta(GenericTable.Meta):
@@ -220,3 +198,12 @@ class LeaseTable6(BaseLeaseTable):
 
     class Meta(BaseLeaseTable.Meta):
         fields = ("type", "duid", "iaid", *BaseLeaseTable.Meta.fields)
+
+
+class LeaseDeleteTable(GenericTable):
+    ip_address = tables.Column(verbose_name="IP Address", accessor="ip")
+
+    class Meta(NetBoxTable.Meta):
+        empty_text = "No leases"
+        fields = ("ip_address",)
+        default_columns = ("ip_address",)

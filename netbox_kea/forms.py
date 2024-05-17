@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal, Optional
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -59,7 +59,7 @@ class BaseLeasesSarchForm(forms.Form):
     q = forms.CharField(label="Search")
     page = forms.CharField(required=False, widget=VeryHiddenInput)
 
-    def clean(self) -> Optional[Dict[str, Any]]:
+    def clean(self) -> Optional[dict[str, Any]]:
         ip_version = self.Meta.ip_version
         cleaned_data = super().clean()
         q = cleaned_data.get("q")
@@ -81,43 +81,37 @@ class BaseLeasesSarchForm(forms.Form):
                     )
                 cleaned_data["q"] = net
             except (AddrFormatError, TypeError, ValueError) as e:
-                raise ValidationError(
-                    {"q": f"Invalid IPv{ip_version} subnet: {cleaned_data['q']}"}
-                ) from e
+                raise ValidationError({"q": f"Invalid IPv{ip_version} subnet."}) from e
         elif by == constants.BY_SUBNET_ID:
             try:
                 i = int(q)
                 if i <= 0:
-                    raise ValidationError({"q": f"Invalid subnet ID: {q}"})
+                    raise ValidationError({"q": "Invalid subnet ID."})
                 cleaned_data["q"] = i
             except ValueError as e:
-                raise ValidationError(
-                    {"q": f"Subnet ID must be an integer: {q}"}
-                ) from e
+                raise ValidationError({"q": "Subnet ID must be an integer."}) from e
         elif by == constants.BY_IP:
             try:
                 # use IPAddress to normalize values
                 cleaned_data["q"] = str(IPAddress(q, version=ip_version))
             except (AddrFormatError, TypeError, ValueError) as e:
-                raise ValidationError(
-                    {"q": f"Invalid IPv{ip_version} address: {q}"}
-                ) from e
+                raise ValidationError({"q": f"Invalid IPv{ip_version} address."}) from e
         elif by == constants.BY_HW_ADDRESS:
             try:
                 cleaned_data["q"] = str(EUI(q, version=48, dialect=mac_unix_expanded))
             except (AddrFormatError, TypeError, ValueError) as e:
-                raise ValidationError({"q": f"Invalid hardware address: {q}"}) from e
+                raise ValidationError({"q": "Invalid hardware address."}) from e
         elif by == constants.BY_DUID:
             if not is_hex_string(
                 q, constants.DUID_MIN_OCTETS, constants.DUID_MAX_OCTETS
             ):
-                raise ValidationError({"q": f"Invalid DUID: {q}"})
+                raise ValidationError({"q": "Invalid DUID."})
             cleaned_data["q"] = q.replace("-", "")
         elif by == constants.BY_CLIENT_ID:
             if not is_hex_string(
                 q, constants.CLIENT_ID_MIN_OCTETS, constants.DUID_MAX_OCTETS
             ):
-                raise ValidationError({"q": f"Invalid client ID: {q}"})
+                raise ValidationError({"q": "Invalid client ID."})
             cleaned_data["q"] = q.replace("-", "")
 
         page = cleaned_data["page"]
@@ -131,7 +125,7 @@ class BaseLeasesSarchForm(forms.Form):
 
                 cleaned_data["page"] = str(page_ip)
             except AddrFormatError as e:
-                raise ValidationError({"page": f"Invalid IP: {page}"}) from e
+                raise ValidationError({"page": "Invalid IP."}) from e
 
 
 class Leases4SearchForm(BaseLeasesSarchForm):
@@ -178,15 +172,25 @@ class MultipleIPField(forms.MultipleChoiceField):
         if not isinstance(value, list):
             raise forms.ValidationError(f"Expected a list, got {type(value)}.")
 
+        if len(value) == 0:
+            raise forms.ValidationError("IP address list is empty.")
+
         try:
             return [str(IPAddress(ip, version=self._version)) for ip in value]
         except (AddrFormatError, ValueError) as e:
             raise forms.ValidationError("Invalid IP address.") from e
 
 
-class Lease6DeleteForm(forms.Form):
+class BaseLeaseDeleteForm(forms.Form):
+    return_url = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
+
+class Lease6DeleteForm(BaseLeaseDeleteForm):
     pk = MultipleIPField(6)
 
 
-class Lease4DeleteForm(forms.Form):
+class Lease4DeleteForm(BaseLeaseDeleteForm):
     pk = MultipleIPField(4)

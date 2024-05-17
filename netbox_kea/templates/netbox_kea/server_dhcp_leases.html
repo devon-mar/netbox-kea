@@ -2,21 +2,25 @@
 {% load helpers %}
 
 {% block head %}
-<style type="text/css">
-.loading-indicator{
-  display: none;
-}
-.htmx-request .loading-indicator{
-  display: inline;
-}
-.htmx-request.loading-indicator{
-  display: inline;
-}
-</style>
+  {{ block.super }}
+  <style type="text/css">
+    .loading-indicator{
+      display: none;
+    }
+    .htmx-request .loading-indicator{
+      display: inline;
+    }
+    .htmx-request.loading-indicator{
+      display: inline;
+    }
+    div.quicksearch{
+      display: none
+    }
+  </style>
 {% endblock %}
 
 {% block content %}{% include "netbox_kea/server_dhcp_leases_htmx.html" with is_embedded=True %}{% endblock %}
 {% block modals %}
   {{ block.super }}
-  {% table_config_form table table_name="ObjectTable" %}
+  {% table_config_form table table_name="LeasesTable" %}
 {% endblock %}
