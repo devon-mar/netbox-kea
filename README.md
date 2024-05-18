@@ -33,7 +33,7 @@ This plugin allows you to view Kea status, leases and subnets in NetBox. Go dire
 
 ## Compatibility
 
-- This plugin was tested with Kea v2.2.0 with the `memfile` lease database.
+- This plugin is tested with Kea v2.4.1 with the `memfile` lease database.
   Other versions and lease databases may also work.
 
 ## Installation
