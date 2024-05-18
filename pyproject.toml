@@ -12,7 +12,7 @@ requests = "^2"
 netaddr = ">=0.8,<=1.2.1"
 
 [tool.poetry.group.dev.dependencies]
-django-stubs = {extras = ["compatible-mypy"], version = "^4"}
+django-stubs = {extras = ["compatible-mypy"], version = "^5"}
 mypy = "^1.2"
 types-requests = "^2"
 pytest = "^8"
