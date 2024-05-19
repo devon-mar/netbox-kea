@@ -1,7 +1,7 @@
 import csv
 import re
 from datetime import datetime
-from typing import Any, Dict, Literal, Optional, Sequence, Tuple
+from typing import Any, Literal, Optional, Sequence
 
 import pynetbox
 import pytest
@@ -105,7 +105,7 @@ def plugin_base(netbox_url: str) -> str:
 
 
 @pytest.fixture
-def lease6(kea: KeaClient) -> Dict[str, Any]:
+def lease6(kea: KeaClient) -> dict[str, Any]:
     lease_ip = "2001:db8:1::1"
     kea.command(
         "lease6-add",
@@ -133,7 +133,7 @@ def lease6_netbox_device(
     test_device_type: int,
     test_device_role: int,
     test_site: int,
-    lease6: Dict[str, Any],
+    lease6: dict[str, Any],
 ):
     version = nb_api.version
     device_role_key = "device_role" if version == "3.5" else "role"
@@ -171,7 +171,7 @@ def lease6_netbox_vm(
     nb_api: pynetbox.api,
     test_cluster: int,
     test_device_role: int,
-    lease6: Dict[str, Any],
+    lease6: dict[str, Any],
 ):
     lease_ip = lease6["ip-address"]
 
@@ -197,7 +197,7 @@ def lease6_netbox_vm(
 
 
 @pytest.fixture
-def lease6_netbox_ip(nb_api: pynetbox.api, lease6: Dict[str, Any]):
+def lease6_netbox_ip(nb_api: pynetbox.api, lease6: dict[str, Any]):
     lease_ip = lease6["ip-address"]
     ip = nb_api.ipam.ip_addresses.create(address=f"{lease_ip}/64")
     yield lease_ip
@@ -205,7 +205,7 @@ def lease6_netbox_ip(nb_api: pynetbox.api, lease6: Dict[str, Any]):
 
 
 @pytest.fixture
-def lease4(kea: KeaClient) -> Dict[str, Any]:
+def lease4(kea: KeaClient) -> dict[str, Any]:
     lease_ip = "192.0.2.1"
     kea.command(
         "lease4-add",
@@ -230,7 +230,7 @@ def lease4_netbox_device(
     test_device_type: int,
     test_device_role: int,
     test_site: int,
-    lease4: Dict[str, Any],
+    lease4: dict[str, Any],
 ):
     version = nb_api.version
     device_role_key = "device_role" if version == "3.5" else "role"
@@ -268,7 +268,7 @@ def lease4_netbox_vm(
     nb_api: pynetbox.api,
     test_cluster: int,
     test_device_role: int,
-    lease4: Dict[str, Any],
+    lease4: dict[str, Any],
 ):
     lease_ip = lease4["ip-address"]
 
@@ -294,7 +294,7 @@ def lease4_netbox_vm(
 
 
 @pytest.fixture
-def lease4_netbox_ip(nb_api: pynetbox.api, lease4: Dict[str, Any]):
+def lease4_netbox_ip(nb_api: pynetbox.api, lease4: dict[str, Any]):
     lease_ip = lease4["ip-address"]
     ip = nb_api.ipam.ip_addresses.create(address=f"{lease_ip}/24")
     yield lease_ip
@@ -915,7 +915,7 @@ def test_dhcp_export_csv_all(
     kea: KeaClient,
     family: Literal[4, 6],
     all_data: bool,
-    check_fields: Tuple[Tuple[str, str], ...],
+    check_fields: tuple[tuple[str, str], ...],
     request: pytest.FixtureRequest,
 ):
     request.getfixturevalue(f"leases{family}_250")
@@ -1101,7 +1101,7 @@ def test_lease_search_eui_formats(
     )
 
 
-def test_lease_search_cisco_style_mac(page: Page, lease4: Dict[str, Any]) -> None:
+def test_lease_search_cisco_style_mac(page: Page, lease4: dict[str, Any]) -> None:
     mac = lease4["hw-address"].replace(":", "")
     cisco_mac = f"{mac[:4]}.{mac[4:8]}.{mac[8:]}"
     search_lease(page, 4, "Hardware Address", cisco_mac)

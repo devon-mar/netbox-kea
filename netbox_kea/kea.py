@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sequence, TypedDict, Union
+from typing import Any, Optional, Sequence, TypedDict
 
 import requests
 from requests.models import HTTPBasicAuth
@@ -6,7 +6,7 @@ from requests.models import HTTPBasicAuth
 
 class KeaResponse(TypedDict):
     result: int
-    arguments: Optional[Dict[str, Any]]
+    arguments: Optional[dict[str, Any]]
     text: Optional[str]
 
 
@@ -16,7 +16,7 @@ class KeaClient:
         url: str,
         username: Optional[str] = None,
         password: Optional[str] = None,
-        verify: Optional[Union[bool, str]] = None,
+        verify: Optional[bool | str] = None,
         client_cert: Optional[str] = None,
         client_key: Optional[str] = None,
         timeout: int = 30,
@@ -40,11 +40,11 @@ class KeaClient:
     def command(
         self,
         command: str,
-        service: Optional[List[str]] = None,
-        arguments: Optional[Dict[str, Any]] = None,
-        check: Union[None, Sequence[int]] = (0,),
-    ) -> List[KeaResponse]:
-        body: Dict[str, Any] = {"command": command}
+        service: Optional[list[str]] = None,
+        arguments: Optional[dict[str, Any]] = None,
+        check: None | Sequence[int] = (0,),
+    ) -> list[KeaResponse]:
+        body: dict[str, Any] = {"command": command}
 
         if service is not None:
             body["service"] = service
@@ -74,7 +74,7 @@ class KeaException(Exception):
         super().__init__(message)
 
 
-def check_response(resp: List[KeaResponse], ok_codes: Sequence[int]) -> None:
+def check_response(resp: list[KeaResponse], ok_codes: Sequence[int]) -> None:
     """Raise a KeaException for any non 0 responses."""
     for idx, kr in enumerate(resp):
         if kr["result"] not in ok_codes:
