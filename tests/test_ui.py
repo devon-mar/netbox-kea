@@ -1,6 +1,6 @@
 import csv
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal, Optional, Sequence
 
 import pynetbox
@@ -808,7 +808,7 @@ def test_dhcp_lease_all_columns(
         )
 
         def check():
-            cltt = datetime.utcfromtimestamp(lease["cltt"])
+            cltt = datetime.fromtimestamp(lease["cltt"], timezone.utc)
             expect(page.locator("table.object-list > tbody > tr > td")).to_have_text(
                 [
                     re.compile(".*"),  # select
@@ -843,7 +843,7 @@ def test_dhcp_lease_all_columns(
         )
 
         def check():
-            cltt = datetime.utcfromtimestamp(lease["cltt"])
+            cltt = datetime.fromtimestamp(lease["cltt"], timezone.utc)
             expect(page.locator("table.object-list > tbody > tr > td")).to_have_text(
                 [
                     "",  # select
