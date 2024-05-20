@@ -640,10 +640,10 @@ def test_dhcp_subnets(
         with page.expect_response(re.compile(f"/leases{family}/")) as r:
             page.get_by_role("link", name=subnet).click()
             assert r.value.ok
-        expect(page.locator("#id_q")).to_have_value(str(subnet_id))
+        expect(page.locator("#id_q")).to_have_value(subnet)
         expect(
             page.locator("#id_by + div.form-select > div.ts-control > div.item")
-        ).to_have_text("Subnet ID")
+        ).to_have_text("Subnet")
 
 
 @pytest.mark.parametrize(

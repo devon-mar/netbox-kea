@@ -1,5 +1,6 @@
 import django_tables2 as tables
 from django.urls import reverse
+from django.utils.http import urlencode
 from netbox.tables import BaseTable, BooleanColumn, NetBoxTable, ToggleColumn, columns
 
 from netbox_kea.utilities import format_duration
@@ -136,12 +137,15 @@ class SubnetTable(GenericTable):
     id = tables.Column(verbose_name="ID")
     subnet = tables.Column(
         linkify=lambda record, table: (
-            reverse(
-                f"plugins:netbox_kea:server_leases{record['dhcp_version']}",
-                args=[record["server_pk"]],
+            (
+                reverse(
+                    f"plugins:netbox_kea:server_leases{record['dhcp_version']}",
+                    args=[record["server_pk"]],
+                )
+                + "?"
+                + urlencode({"by": "subnet", "q": record["subnet"]})
             )
-            + f"?by=subnet_id&q={record['id']}"
-            if record.get("id")
+            if record.get("subnet")
             else None
         ),
     )
