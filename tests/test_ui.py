@@ -347,25 +347,33 @@ def netbox_login(
     netbox_password: str,
     netbox_user_permissions: list[dict[str, list[Any]]],
     nb_api: pynetbox.api,
-) -> None:
+):
+    to_delete = []
     if netbox_username != "admin":
         nb_api.users.users.filter(username=netbox_username).delete()
         nb_api.users.permissions.all(0).delete()
         user = nb_api.users.users.create(
             username=netbox_username, password=netbox_password
         )
+        to_delete.append(user)
         for permission in netbox_user_permissions:
-            nb_api.users.permissions.create(
+            p = nb_api.users.permissions.create(
                 name=netbox_username,
                 actions=permission["actions"],
                 object_types=permission["object_types"],
                 users=[user.id],
             )
+            to_delete.append(p)
 
     page.goto(f"{netbox_url}/login/")
     page.get_by_label("Username").fill(netbox_username)
     page.get_by_label("Password").fill(netbox_password)
     page.get_by_role("button", name="Sign In").click()
+
+    yield
+
+    for obj in to_delete:
+        assert obj.delete()
 
 
 @pytest.fixture(scope="session")
@@ -979,6 +987,95 @@ def test_lease_delete(
     )
 
     expect(page).to_have_url(url)
+
+
+@pytest.mark.parametrize(
+    ("netbox_username", "netbox_password", "netbox_user_permissions"),
+    [
+        (
+            "delete-user",
+            "delete-user",
+            [
+                {
+                    "actions": ["view", "bulk_delete_lease_from"],
+                    "object_types": ["netbox_kea.server"],
+                }
+            ],
+        ),
+        (
+            "no-delete-user",
+            "no-delete-user",
+            [{"actions": ["view"], "object_types": ["netbox_kea.server"]}],
+        ),
+    ],
+)
+@pytest.mark.parametrize("family", (6, 4))
+def test_lease_delete_no_permission(
+    page: Page,
+    kea: KeaClient,
+    netbox_username: str,
+    family: Literal[6, 4],
+    request: pytest.FixtureRequest,
+) -> None:
+    ip = request.getfixturevalue(f"lease{family}")["ip-address"]
+
+    search_lease(page, family, "IP Address", ip)
+
+    expected_count = int(netbox_username.startswith("delete"))
+
+    expect(page.locator(".object-list > tbody > tr")).to_have_count(1)
+
+    expect(page.locator('input[name="pk"]')).to_have_count(expected_count)
+    expect(page.get_by_role("button", name="Delete Selected")).to_have_count(
+        expected_count
+    )
+
+
+@pytest.mark.parametrize(
+    ("netbox_username", "netbox_password", "netbox_user_permissions"),
+    [
+        (
+            "delete-user",
+            "delete-user",
+            [
+                {
+                    "actions": ["view", "bulk_delete_lease_from"],
+                    "object_types": ["netbox_kea.server"],
+                }
+            ],
+        ),
+    ],
+)
+@pytest.mark.parametrize("family", (6, 4))
+def test_lease_delete_no_permission_on_confirm(
+    page: Page,
+    kea: KeaClient,
+    nb_api: pynetbox.api,
+    netbox_username: str,
+    family: Literal[6, 4],
+    request: pytest.FixtureRequest,
+) -> None:
+    ip = request.getfixturevalue(f"lease{family}")["ip-address"]
+
+    search_lease(page, family, "IP Address", ip)
+
+    expect(page.locator(".object-list > tbody > tr")).to_have_count(1)
+    page.locator('input[name="pk"]').check()
+
+    page.get_by_role("button", name="Delete Selected").click()
+
+    # Remove bulk_delete_lease_from permission from the user before confirming
+    user = nb_api.users.users.get(username=netbox_username)
+    assert user is not None
+    assert len(user.permissions) == 1
+    p = user.permissions[0]
+    p.actions = ["view"]
+    assert p.save()
+
+    page.locator('button[name="_confirm"]').click()
+    expect(page.locator("body")).to_have_text(
+        "This user does not have permission to delete DHCP leases."
+    )
 
 
 @pytest.mark.parametrize("family", (6, 4))

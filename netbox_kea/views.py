@@ -3,7 +3,7 @@ from abc import ABCMeta
 from typing import Any, Optional
 
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.http.request import HttpRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -320,17 +320,26 @@ class BaseServerLeasesView(generic.ObjectView):
                 next_page = None
                 leases = self.get_leases(client, q, by)
 
+            table = self.table(leases, user=request.user)
+            can_delete = request.user.has_perm(
+                "netbox_kea.bulk_delete_lease_from_server",
+                obj=instance,
+            )
+            if not can_delete:
+                table.columns.hide("pk")
+
             return render(
                 request,
                 "netbox_kea/server_dhcp_leases_htmx.html",
                 {
+                    "can_delete": can_delete,
                     "is_embedded": False,
                     "delete_action": reverse(
                         f"plugins:netbox_kea:server_leases{self.dhcp_version}_delete",
                         args=[instance.pk],
                     ),
                     "form": form,
-                    "table": self.table(leases, user=request.user),
+                    "table": table,
                     "next_page": next_page,
                     "paginate": paginate,
                     "page_lengths": EnhancedPaginator.default_page_lengths,
@@ -393,6 +402,14 @@ class BaseServerLeasesDeleteView(
 
     def post(self, request: HttpRequest, **kwargs) -> HttpResponse:
         instance: Server = self.get_object(**kwargs)
+
+        if not request.user.has_perm(
+            "netbox_kea.bulk_delete_lease_from_server", obj=instance
+        ):
+            return HttpResponseForbidden(
+                "This user does not have permission to delete DHCP leases."
+            )
+
         form = self.form(request.POST)
 
         if not form.is_valid():
