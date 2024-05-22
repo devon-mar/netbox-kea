@@ -9,6 +9,7 @@
         class="form form-horizontal"
         hx-get="."
         hx-indicator="#search-indicator"
+        hx-disabled-elt="#lease-search-btn"
         {% if form.is_bound and is_embedded and form.is_valid %}hx-trigger="load"{% endif %}
       >
         {% if form.cleaned_data.page %}
@@ -23,7 +24,7 @@
           <div id="search-indicator" class="spinner-border d-inline-block align-middle htmx-indicator me-2" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
-          <button type="submit" class="btn btn-primary">
+          <button id="lease-search-btn" type="submit" class="btn btn-primary">
             <span class="mdi mdi-magnify" aria-hidden="true"></span> Search
           </button>
         </div>
