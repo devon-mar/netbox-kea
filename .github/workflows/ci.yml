@@ -15,25 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#caching-packages
-      - name: Install poetry
-        run: pipx install poetry
-
-      - name: Setup Python 3.12
-        id: setup-python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: poetry
-
-      - run: poetry install
-        if: steps.setup-python.outputs.cache-hit != 'true'
-
-      - uses: psf/black@stable
-
-      - name: Lint with flake8
-        run: |
-          poetry run flake8 . --count --max-line-length=120 --show-source --statistics
+      - uses: chartboost/ruff-action@v1
   test:
     strategy:
       matrix:

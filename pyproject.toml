@@ -17,18 +17,14 @@ mypy = "^1.2"
 types-requests = "^2"
 pytest = "^8"
 pynetbox = "^7"
-flake8 = "^7.0"
 pytest-playwright = "^0.5"
-black = "^24.1"
+ruff = "^0.4"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.isort]
-profile = "black"
-
-[tool.black]
-extend-exclude = """
-  netbox_kea/migrations
-"""
+[tool.ruff]
+exclude = [
+  "netbox_kea/migrations",
+]
