@@ -16,7 +16,7 @@ django-stubs = {extras = ["compatible-mypy"], version = "^5"}
 mypy = "^1.2"
 types-requests = "^2"
 pytest = "^8"
-pynetbox = "^7"
+pynetbox = "^7.3"
 pytest-playwright = "^0.5"
 ruff = "^0.4"
 
