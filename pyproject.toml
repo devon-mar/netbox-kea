@@ -28,3 +28,36 @@ build-backend = "poetry.core.masonry.api"
 exclude = [
   "netbox_kea/migrations",
 ]
+
+[tool.ruff.lint]
+select = [
+  "C4",
+  "E",
+  "EXE",
+  "F",
+  "I",
+  "ISC",
+  "PERF",
+  "PIE",
+  "PYI",
+  "UP",
+  "W",
+]
+ignore = [
+  "E501",
+  # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  "W191",
+  "E111",
+  "E114",
+  "E117",
+  "D206",
+  "D300",
+  "Q000",
+  "Q001",
+  "Q002",
+  "Q003",
+  "COM812",
+  "COM819",
+  "ISC001",
+  "ISC002",
+]

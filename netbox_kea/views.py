@@ -437,7 +437,7 @@ class BaseServerLeasesDeleteView(
         for ip in lease_ips:
             try:
                 self.delete_lease(client, ip)
-            except Exception as e:
+            except Exception as e:  # noqa: PERF203
                 messages.error(request, f"Error deleting lease {ip}: {repr(e)}")
                 return redirect(self.get_return_url(request, obj=instance))
 
@@ -475,27 +475,27 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
             f"subnet{self.dhcp_version}"
         ]
         subnet_list = [
-            dict(
-                id=s["id"],
-                subnet=s["subnet"],
-                dhcp_version=self.dhcp_version,
-                server_pk=server.pk,
-            )
+            {
+                "id": s["id"],
+                "subnet": s["subnet"],
+                "dhcp_version": self.dhcp_version,
+                "server_pk": server.pk,
+            }
             for s in subnets
             if "id" in s and "subnet" in s
         ]
 
         for sn in config[0]["arguments"][f"Dhcp{self.dhcp_version}"]["shared-networks"]:
-            for s in sn[f"subnet{self.dhcp_version}"]:
-                subnet_list.append(
-                    dict(
-                        id=s["id"],
-                        subnet=s["subnet"],
-                        shared_network=sn["name"],
-                        dhcp_version=self.dhcp_version,
-                        server_pk=server.pk,
-                    )
-                )
+            subnet_list.extend(
+                {
+                    "id": s["id"],
+                    "subnet": s["subnet"],
+                    "shared_network": sn["name"],
+                    "dhcp_version": self.dhcp_version,
+                    "server_pk": server.pk,
+                }
+                for s in sn[f"subnet{self.dhcp_version}"]
+            )
 
         return subnet_list
 

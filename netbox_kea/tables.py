@@ -150,7 +150,7 @@ class SubnetTable(GenericTable):
         ),
     )
     shared_network = tables.Column(verbose_name="Shared Network")
-    actions = columns.ActionsColumn(actions=tuple(), extra_buttons=SUBNET_ACTIONS)
+    actions = columns.ActionsColumn(actions=(), extra_buttons=SUBNET_ACTIONS)
 
     class Meta(NetBoxTable.Meta):
         empty_text = "No subnets"

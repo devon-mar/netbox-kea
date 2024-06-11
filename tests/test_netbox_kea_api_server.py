@@ -87,7 +87,7 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
     server_url
   }
 }
-"""
+"""  # noqa: UP031
             % server.id
         },
     )
