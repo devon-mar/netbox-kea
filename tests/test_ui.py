@@ -472,7 +472,7 @@ def configure_table(page: Page, *selected_coumns: str) -> None:
         ("admin", "admin", None),
         (
             "user",
-            "user",
+            "user12Characters",
             [{"actions": ["view"], "object_types": ["netbox_kea.server"]}],
         ),
     ],
@@ -490,7 +490,7 @@ def test_navigation_view(page: Page) -> None:
         ("admin", "admin", None),
         (
             "user",
-            "user",
+            "user12Characters",
             [{"actions": ["view", "add"], "object_types": ["netbox_kea.server"]}],
         ),
     ],
@@ -508,7 +508,7 @@ def test_navigation_add(page: Page) -> None:
     [
         (
             "user",
-            "user",
+            "user12Characters",
             [],
         ),
     ],
@@ -522,7 +522,7 @@ def test_navigation_view_no_access(page: Page) -> None:
     [
         (
             "user",
-            "user",
+            "user12Characters",
             [{"actions": ["view"], "object_types": ["netbox_kea.server"]}],
         ),
     ],
@@ -994,7 +994,7 @@ def test_lease_delete(
     [
         (
             "delete-user",
-            "delete-user",
+            "delete-user12Characters",
             [
                 {
                     "actions": ["view", "bulk_delete_lease_from"],
@@ -1036,7 +1036,7 @@ def test_lease_delete_no_permission(
     [
         (
             "delete-user",
-            "delete-user",
+            "delete-user12Characters",
             [
                 {
                     "actions": ["view", "bulk_delete_lease_from"],
