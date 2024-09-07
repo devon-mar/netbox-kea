@@ -1004,7 +1004,7 @@ def test_lease_delete(
         ),
         (
             "no-delete-user",
-            "no-delete-user",
+            "no-delete-user12Characters",
             [{"actions": ["view"], "object_types": ["netbox_kea.server"]}],
         ),
     ],
