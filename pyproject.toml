@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "netbox-kea"
-version = "1.0.0"
+version = "1.0.1"
 description = ""
 authors = ["Devon Mar <devonm+netbox-kea@mdmm.ca>"]
 readme = "README.md"
