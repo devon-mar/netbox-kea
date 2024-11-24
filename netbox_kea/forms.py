@@ -1,4 +1,4 @@
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -59,7 +59,7 @@ class BaseLeasesSarchForm(forms.Form):
     q = forms.CharField(label="Search")
     page = forms.CharField(required=False, widget=VeryHiddenInput)
 
-    def clean(self) -> Optional[dict[str, Any]]:
+    def clean(self) -> dict[str, Any] | None:
         ip_version = self.Meta.ip_version
         cleaned_data = super().clean()
         q = cleaned_data.get("q")

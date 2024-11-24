@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import pynetbox
 import pytest
@@ -117,7 +117,7 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
         ),
     ),
 )
-def test_api_add_failures(body: Dict[str, Any], nb_api: pynetbox.api):
+def test_api_add_failures(body: dict[str, Any], nb_api: pynetbox.api):
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(**body)
 

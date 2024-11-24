@@ -1,4 +1,5 @@
-from typing import Any, Optional, Sequence, TypedDict
+from collections.abc import Sequence
+from typing import Any, TypedDict
 
 import requests
 from requests.models import HTTPBasicAuth
@@ -6,19 +7,19 @@ from requests.models import HTTPBasicAuth
 
 class KeaResponse(TypedDict):
     result: int
-    arguments: Optional[dict[str, Any]]
-    text: Optional[str]
+    arguments: dict[str, Any] | None
+    text: str | None
 
 
 class KeaClient:
     def __init__(
         self,
         url: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        verify: Optional[bool | str] = None,
-        client_cert: Optional[str] = None,
-        client_key: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
+        verify: bool | str | None = None,
+        client_cert: str | None = None,
+        client_key: str | None = None,
         timeout: int = 30,
     ):
         if (client_cert is not None and client_key is None) or (
@@ -40,8 +41,8 @@ class KeaClient:
     def command(
         self,
         command: str,
-        service: Optional[list[str]] = None,
-        arguments: Optional[dict[str, Any]] = None,
+        service: list[str] | None = None,
+        arguments: dict[str, Any] | None = None,
         check: None | Sequence[int] = (0,),
     ) -> list[KeaResponse]:
         body: dict[str, Any] = {"command": command}
@@ -63,7 +64,7 @@ class KeaClient:
 
 class KeaException(Exception):
     def __init__(
-        self, resp: KeaResponse, msg: Optional[str] = None, index: Optional[int] = None
+        self, resp: KeaResponse, msg: str | None = None, index: int | None = None
     ) -> None:
         self.index = index
         self.response = resp

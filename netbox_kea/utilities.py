@@ -1,6 +1,7 @@
 import re
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Literal
 
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -12,7 +13,7 @@ from . import constants
 from .models import Server
 
 
-def format_duration(s: Optional[int]) -> Optional[str]:
+def format_duration(s: int | None) -> str | None:
     if s is None:
         return None
     hours, rest = divmod(s, 3600)
@@ -73,7 +74,7 @@ def is_hex_string(s: str, min_octets: int, max_octets: int):
 
 def check_dhcp_enabled(
     instance: Server, version: Literal[6, 4]
-) -> Optional[HttpResponse]:
+) -> HttpResponse | None:
     if (version == 6 and instance.dhcp6) or (version == 4 and instance.dhcp4):
         return None
     return redirect(instance.get_absolute_url())

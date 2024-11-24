@@ -1,6 +1,6 @@
 import logging
 from abc import ABCMeta
-from typing import Any, Optional
+from typing import Any
 
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
@@ -159,8 +159,8 @@ class BaseServerLeasesView(generic.ObjectView):
     queryset = Server.objects.all()
 
     def get_leases_page(
-        self, client: KeaClient, subnet: IPNetwork, page: Optional[str], per_page: int
-    ) -> tuple[list[dict[str, Any]], Optional[str]]:
+        self, client: KeaClient, subnet: IPNetwork, page: str | None, per_page: int
+    ) -> tuple[list[dict[str, Any]], str | None]:
         if page:
             frm = page
         elif int(subnet.network) == 0:
@@ -259,7 +259,7 @@ class BaseServerLeasesView(generic.ObjectView):
         client = instance.get_client()
         if by == constants.BY_SUBNET:
             leases = []
-            page: Optional[str] = ""  # start from the beginning
+            page: str | None = ""  # start from the beginning
             while page is not None:
                 page_leases, page = self.get_leases_page(
                     client,

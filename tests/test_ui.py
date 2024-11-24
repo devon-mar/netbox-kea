@@ -1,7 +1,8 @@
 import csv
 import re
+from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Any, Literal, Optional, Sequence
+from typing import Any, Literal
 
 import pynetbox
 import pytest
@@ -621,7 +622,7 @@ def test_dhcp_subnets(
     page: Page,
     kea: KeaClient,
     family: str,
-    subnets: Sequence[tuple[str, str, Optional[str]]],
+    subnets: Sequence[tuple[str, str, str | None]],
 ) -> None:
     for i, (subnet_id, subnet, shared_network) in enumerate(subnets):
         page.get_by_role("link", name=f"DHCPv{family} Subnets").click()
