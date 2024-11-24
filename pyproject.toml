@@ -6,8 +6,12 @@ authors = ["Devon Mar <devonm+netbox-kea@mdmm.ca>"]
 readme = "README.md"
 packages = [{include = "netbox_kea"}]
 
+[project]
+# NetBox 4.10 requires Python 3.10
+requires-python = ">=3.10"
+
 [tool.poetry.dependencies]
-python = "^3.8.1"
+python = "^3.10"
 requests = "^2"
 netaddr = ">=0.8 | ^1"
 
