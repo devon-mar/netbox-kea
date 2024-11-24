@@ -72,9 +72,7 @@ def is_hex_string(s: str, min_octets: int, max_octets: int):
     return octets >= min_octets and octets <= max_octets
 
 
-def check_dhcp_enabled(
-    instance: Server, version: Literal[6, 4]
-) -> HttpResponse | None:
+def check_dhcp_enabled(instance: Server, version: Literal[6, 4]) -> HttpResponse | None:
     if (version == 6 and instance.dhcp6) or (version == 4 and instance.dhcp4):
         return None
     return redirect(instance.get_absolute_url())
