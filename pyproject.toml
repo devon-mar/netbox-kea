@@ -22,7 +22,7 @@ types-requests = "^2"
 pytest = "^8"
 pynetbox = "^7.3"
 pytest-playwright = "^0.6"
-ruff = "^0.7"
+ruff = "^0.8"
 
 [build-system]
 requires = ["poetry-core"]
