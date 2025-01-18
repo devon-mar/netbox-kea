@@ -20,8 +20,10 @@ dev = [
   "pytest>=8.0.0,<9.0.0",
   "pytest-playwright>=0.6.0,<0.7.0",
   "pynetbox>=7.3.0,<7.4.0",
-  "ruff>=0.8.0,<0.9.0",
   "django-stubs[compatible-mypy]>=5.0.0,<6.0.0",
+  # Doesn't work with ruff-action
+  # "ruff>=0.8.0,<0.9.0",
+  "ruff>=0.8.0",
 ]
 
 [build-system]
