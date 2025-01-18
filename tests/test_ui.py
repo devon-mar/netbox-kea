@@ -155,11 +155,12 @@ def lease6_netbox_device(
     )
 
     if version not in ("4.0", "4.1"):
-        nb_api.dcim.mac_addresses.create(
+        intf_mac = nb_api.dcim.mac_addresses.create(
             mac_address=lease6["hw-address"],
             assigned_object_type="dcim.interface",
             assigned_object_id=interface.id,
         )
+        assert interface.update({"primary_mac_address": intf_mac.id})
 
     ip = nb_api.ipam.ip_addresses.create(
         address=f"{lease_ip}/64",
@@ -193,11 +194,13 @@ def lease6_netbox_vm(
         name="eth0", virtual_machine=vm.id, mac_address=lease6["hw-address"]
     )
     if version not in ("4.0", "4.1"):
-        nb_api.dcim.mac_addresses.create(
+        intf_mac = nb_api.dcim.mac_addresses.create(
             mac_address=lease6["hw-address"],
             assigned_object_type="virtualization.vminterface",
             assigned_object_id=interface.id,
         )
+        assert interface.update({"primary_mac_address": intf_mac.id})
+
     ip = nb_api.ipam.ip_addresses.create(
         address=f"{lease_ip}/64",
         assigned_object_type="virtualization.vminterface",
