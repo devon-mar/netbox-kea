@@ -154,7 +154,7 @@ def lease6_netbox_device(
         mac_address=lease6["hw-address"],
     )
 
-    if float(version) > 4.2:
+    if version not in ("4.0", "4.1"):
         nb_api.dcim.mac_addresses.create(
             mac_address=lease6["hw-address"],
             assigned_object_type="dcim.interface",
@@ -192,7 +192,7 @@ def lease6_netbox_vm(
     interface = nb_api.virtualization.interfaces.create(
         name="eth0", virtual_machine=vm.id, mac_address=lease6["hw-address"]
     )
-    if float(version) > 4.2:
+    if version not in ("4.0", "4.1"):
         nb_api.dcim.mac_addresses.create(
             mac_address=lease6["hw-address"],
             assigned_object_type="virtualization.vminterface",
