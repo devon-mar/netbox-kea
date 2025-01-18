@@ -137,7 +137,6 @@ def lease6_netbox_device(
     lease6: dict[str, Any],
 ):
     version = nb_api.version
-    device_role_key = "device_role" if version == "3.5" else "role"
 
     lease_ip = lease6["ip-address"]
 
@@ -145,7 +144,7 @@ def lease6_netbox_device(
         name=lease6["hostname"],
         device_type=test_device_type,
         site=test_site,
-        **{device_role_key: test_device_role},
+        role=test_device_role,
     )
 
     interface = nb_api.dcim.interfaces.create(
@@ -154,6 +153,13 @@ def lease6_netbox_device(
         device=device.id,
         mac_address=lease6["hw-address"],
     )
+
+    if float(version) > 4.2:
+        nb_api.dcim.mac_addresses.create(
+            mac_address=lease6["hw-address"],
+            assigned_object_type="dcim.interface",
+            assigned_object_id=interface.id,
+        )
 
     ip = nb_api.ipam.ip_addresses.create(
         address=f"{lease_ip}/64",
@@ -174,6 +180,8 @@ def lease6_netbox_vm(
     test_device_role: int,
     lease6: dict[str, Any],
 ):
+    version = nb_api.version
+
     lease_ip = lease6["ip-address"]
 
     vm = nb_api.virtualization.virtual_machines.create(
@@ -184,6 +192,12 @@ def lease6_netbox_vm(
     interface = nb_api.virtualization.interfaces.create(
         name="eth0", virtual_machine=vm.id, mac_address=lease6["hw-address"]
     )
+    if float(version) > 4.2:
+        nb_api.dcim.mac_addresses.create(
+            mac_address=lease6["hw-address"],
+            assigned_object_type="virtualization.vminterface",
+            assigned_object_id=interface.id,
+        )
     ip = nb_api.ipam.ip_addresses.create(
         address=f"{lease_ip}/64",
         assigned_object_type="virtualization.vminterface",
