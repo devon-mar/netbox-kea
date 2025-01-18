@@ -32,24 +32,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
 
       - name: Setup Python 3.12
         id: setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: poetry
-
-      - run: poetry install
-        if: steps.setup-python.outputs.cache-hit != 'true'
+          python-version-file: pyproject.toml
 
       - name: Ensure playwright browsers are installed
-        run: poetry run playwright install --with-deps
+        run: uv run playwright install --with-deps
 
-      - name: Run poetry build
-        run: poetry build
+      - name: Run uv build
+        run: uv build
 
       - name: Run test_setup.sh
         run: ./tests/test_setup.sh
@@ -58,7 +56,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest --tracing=retain-on-failure -v
+          uv run pytest --tracing=retain-on-failure -v
 
       - name: Upload Playwright traces
         uses: actions/upload-artifact@v4
