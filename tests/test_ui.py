@@ -251,7 +251,7 @@ def lease4_netbox_device(
     lease4: dict[str, Any],
 ):
     version = nb_api.version
-    device_role_key = "device_role" if version == "3.5" else "role"
+    device_role_key = "role"
 
     lease_ip = lease4["ip-address"]
 
@@ -268,6 +268,14 @@ def lease4_netbox_device(
         device=device.id,
         mac_address=lease4["hw-address"],
     )
+
+    if version not in ("4.0", "4.1"):
+        intf_mac = nb_api.dcim.mac_addresses.create(
+            mac_address=lease4["hw-address"],
+            assigned_object_type="dcim.interface",
+            assigned_object_id=interface.id,
+        )
+        assert interface.update({"primary_mac_address": intf_mac.id})
 
     ip = nb_api.ipam.ip_addresses.create(
         address=f"{lease_ip}/24",
@@ -288,6 +296,8 @@ def lease4_netbox_vm(
     test_device_role: int,
     lease4: dict[str, Any],
 ):
+    version = nb_api.version
+
     lease_ip = lease4["ip-address"]
 
     vm = nb_api.virtualization.virtual_machines.create(
@@ -295,9 +305,19 @@ def lease4_netbox_vm(
         cluster=test_cluster,
         role=test_device_role,
     )
+
     interface = nb_api.virtualization.interfaces.create(
         name="eth0", virtual_machine=vm.id, mac_address=lease4["hw-address"]
     )
+
+    if version not in ("4.0", "4.1"):
+        intf_mac = nb_api.dcim.mac_addresses.create(
+            mac_address=lease4["hw-address"],
+            assigned_object_type="virtualization.vminterface",
+            assigned_object_id=interface.id,
+        )
+        assert interface.update({"primary_mac_address": intf_mac.id})
+
     ip = nb_api.ipam.ip_addresses.create(
         address=f"{lease_ip}/24",
         assigned_object_type="virtualization.vminterface",
