@@ -5,7 +5,7 @@ from netbox.tables import BaseTable, BooleanColumn, NetBoxTable, ToggleColumn, c
 
 from netbox_kea.utilities import format_duration
 
-from .models import Server
+from .models import DHCPSubnet, Server
 
 SUBNET_ACTIONS = """<span class="btn-group dropdown">
   <a class="btn btn-sm btn-secondary dropdown-toggle" href="#" type="button" data-bs-toggle="dropdown">
@@ -133,19 +133,19 @@ class GenericTable(BaseTable):
         return len(self.data)
 
 
-class SubnetTable(GenericTable):
+class DHCPSubnetTable(BaseTable):
     id = tables.Column(verbose_name="ID")
     subnet = tables.Column(
         linkify=lambda record, table: (
             (
                 reverse(
-                    f"plugins:netbox_kea:server_leases{record['dhcp_version']}",
-                    args=[record["server_pk"]],
+                    f"plugins:netbox_kea:server_leases{record.dhcp_version}",
+                    args=[record.server_pk],
                 )
                 + "?"
-                + urlencode({"by": "subnet", "q": record["subnet"]})
+                + urlencode({"by": "subnet", "q": record.subnet})
             )
-            if record.get("subnet")
+            if record.subnet
             else None
         ),
     )
@@ -153,7 +153,7 @@ class SubnetTable(GenericTable):
     actions = columns.ActionsColumn(actions=(), extra_buttons=SUBNET_ACTIONS)
 
     class Meta(NetBoxTable.Meta):
-        empty_text = "No subnets"
+        model = DHCPSubnet
         fields = ("id", "subnet", "shared_network", "actions")
         default_columns = ("id", "subnet", "shared_network")
 

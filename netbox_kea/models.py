@@ -3,6 +3,7 @@ import os
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Model
 from django.urls import reverse
 from netbox.models import NetBoxModel
 
@@ -111,3 +112,13 @@ class Server(NetBoxModel):
                 raise ValidationError(
                     {"dhcp4": f"Unable to get DHCPv4 version: {repr(e)}"}
                 ) from e
+
+
+class DHCPSubnet(Model):
+    class Meta:
+        managed = False
+
+    dhcp_version = models.PositiveIntegerField()
+    server_pk = models.PositiveIntegerField()
+    subnet = models.CharField()
+    shared_network = models.CharField()
