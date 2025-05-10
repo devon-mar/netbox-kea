@@ -111,3 +111,13 @@ class Server(NetBoxModel):
                 raise ValidationError(
                     {"dhcp4": f"Unable to get DHCPv4 version: {repr(e)}"}
                 ) from e
+
+
+class DHCPSubnet(NetBoxModel):
+    class Meta:
+        managed = False
+
+    dhcp_version = models.PositiveIntegerField()
+    server_pk = models.PositiveIntegerField()
+    subnet = models.CharField()
+    shared_network = models.CharField()

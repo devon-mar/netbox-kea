@@ -16,7 +16,7 @@ from utilities.views import GetReturnURLMixin, ViewTab, register_model_view
 from . import constants, forms, tables
 from .filtersets import ServerFilterSet
 from .kea import KeaClient
-from .models import Server
+from .models import DHCPSubnet, Server
 from .utilities import (
     OptionalViewTab,
     check_dhcp_enabled,
@@ -458,16 +458,14 @@ class ServerLeases4DeleteView(BaseServerLeasesDeleteView):
 
 
 class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
-    table = tables.SubnetTable
+    table = tables.DHCPSubnetTable
     queryset = Server.objects.all()
     template_name = "netbox_kea/server_dhcp_subnets.html"
 
-    def get_children(
-        self, request: HttpRequest, parent: Server
-    ) -> list[dict[str, Any]]:
+    def get_children(self, request: HttpRequest, parent: Server) -> list[DHCPSubnet]:
         return self.get_subnets(parent)
 
-    def get_subnets(self, server: Server) -> list[dict[str, Any]]:
+    def get_subnets(self, server: Server) -> list[DHCPSubnet]:
         client = server.get_client()
         config = client.command("config-get", service=[f"dhcp{self.dhcp_version}"])
         assert config[0]["arguments"] is not None
@@ -475,25 +473,25 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
             f"subnet{self.dhcp_version}"
         ]
         subnet_list = [
-            {
-                "id": s["id"],
-                "subnet": s["subnet"],
-                "dhcp_version": self.dhcp_version,
-                "server_pk": server.pk,
-            }
+            DHCPSubnet(
+                id=s["id"],
+                subnet=s["subnet"],
+                dhcp_version=self.dhcp_version,
+                server_pk=server.pk,
+            )
             for s in subnets
             if "id" in s and "subnet" in s
         ]
 
         for sn in config[0]["arguments"][f"Dhcp{self.dhcp_version}"]["shared-networks"]:
             subnet_list.extend(
-                {
-                    "id": s["id"],
-                    "subnet": s["subnet"],
-                    "shared_network": sn["name"],
-                    "dhcp_version": self.dhcp_version,
-                    "server_pk": server.pk,
-                }
+                DHCPSubnet(
+                    id=s["id"],
+                    subnet=s["subnet"],
+                    shared_network=sn["name"],
+                    dhcp_version=self.dhcp_version,
+                    server_pk=server.pk,
+                )
                 for s in sn[f"subnet{self.dhcp_version}"]
             )
 
