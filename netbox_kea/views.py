@@ -1,6 +1,6 @@
 import logging
 from abc import ABCMeta
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
@@ -8,6 +8,7 @@ from django.http.request import HttpRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from netaddr import IPAddress, IPNetwork
+from netbox.tables import BaseTable
 from netbox.views import generic
 from utilities.exceptions import AbortRequest
 from utilities.paginator import EnhancedPaginator, get_paginate_count
@@ -24,6 +25,8 @@ from .utilities import (
     format_duration,
     format_leases,
 )
+
+T = TypeVar("T", bound=BaseTable)
 
 
 @register_model_view(Server)
@@ -154,9 +157,15 @@ class ServerStatusView(generic.ObjectView):
         return {"statuses": self._get_statuses(instance, instance.get_client())}
 
 
-class BaseServerLeasesView(generic.ObjectView):
+class BaseServerLeasesView(Generic[T], generic.ObjectView):
     template_name = "netbox_kea/server_dhcp_leases.html"
     queryset = Server.objects.all()
+    table: type[T]
+
+    def get_table(self, data: list[dict[str, Any]], request: HttpRequest) -> T:
+        table = self.table(data, user=request.user)
+        table.configure(request)
+        return table
 
     def get_leases_page(
         self, client: KeaClient, subnet: IPNetwork, page: str | None, per_page: int
@@ -242,7 +251,7 @@ class BaseServerLeasesView(generic.ObjectView):
     ) -> dict[str, Any]:
         # For non-htmx requests.
 
-        table = self.table([], user=request.user)
+        table = self.get_table([], request)
         form = self.form(request.GET) if "q" in request.GET else self.form()
         return {"form": form, "table": table}
 
@@ -271,7 +280,7 @@ class BaseServerLeasesView(generic.ObjectView):
         else:
             leases = self.get_leases(client, q, by)
 
-        table = self.table(leases, user=request.user)
+        table = self.get_table(leases, request)
         return export_table(
             table, "leases.csv", use_selected_columns=request.GET["export"] == "table"
         )
@@ -293,13 +302,14 @@ class BaseServerLeasesView(generic.ObjectView):
         try:
             form = self.form(request.GET)
             if not form.is_valid():
+                table = self.get_table([], request)
                 return render(
                     request,
                     "netbox_kea/server_dhcp_leases_htmx.html",
                     {
                         "is_embedded": False,
                         "form": form,
-                        "table": self.table([]),
+                        "table": table,
                         "paginate": False,
                     },
                 )
@@ -320,7 +330,8 @@ class BaseServerLeasesView(generic.ObjectView):
                 next_page = None
                 leases = self.get_leases(client, q, by)
 
-            table = self.table(leases, user=request.user)
+            table = self.get_table(leases, request)
+
             can_delete = request.user.has_perm(
                 "netbox_kea.bulk_delete_lease_from_server",
                 obj=instance,
@@ -355,7 +366,7 @@ class BaseServerLeasesView(generic.ObjectView):
 
 
 @register_model_view(Server, "leases6")
-class ServerLeases6View(BaseServerLeasesView):
+class ServerLeases6View(BaseServerLeasesView[tables.LeaseTable6]):
     tab = OptionalViewTab(
         label="DHCPv6 Leases", weight=1010, is_enabled=lambda s: s.dhcp6
     )
@@ -365,7 +376,7 @@ class ServerLeases6View(BaseServerLeasesView):
 
 
 @register_model_view(Server, "leases4")
-class ServerLeases4View(BaseServerLeasesView):
+class ServerLeases4View(BaseServerLeasesView[tables.LeaseTable4]):
     tab = OptionalViewTab(
         label="DHCPv4 Leases", weight=1020, is_enabled=lambda s: s.dhcp4
     )
