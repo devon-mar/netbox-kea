@@ -11,6 +11,7 @@ from netaddr import IPAddress, IPNetwork
 from netbox.tables import BaseTable
 from netbox.views import generic
 from utilities.exceptions import AbortRequest
+from utilities.htmx import htmx_partial
 from utilities.paginator import EnhancedPaginator, get_paginate_count
 from utilities.views import GetReturnURLMixin, ViewTab, register_model_view
 
@@ -510,22 +511,47 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
 
         return subnet_list
 
-    def get(self, request: HttpRequest, **kwargs) -> HttpResponse:
+    def get(self, request: HttpRequest, **kwargs: Any) -> HttpResponse:
         instance = self.get_object(**kwargs)
         if resp := check_dhcp_enabled(instance, self.dhcp_version):
             return resp
 
-        if "export" not in request.GET:
-            return super().get(request, **kwargs)
-
+        # We can't use the original get() since it calls get_table_configs which requires a NetBox model.
+        instance = self.get_object(**kwargs)
         child_objects = self.get_children(request, instance)
+
         table_data = self.prep_table_data(request, child_objects, instance)
         table = self.get_table(table_data, request, False)
 
-        return export_table(
-            table,
-            filename=f"kea-dhcpv{self.dhcp_version}-subnets.csv",
-            use_selected_columns=request.GET["export"] == "table",
+        if "export" in request.GET:
+            return export_table(
+                table,
+                filename=f"kea-dhcpv{self.dhcp_version}-subnets.csv",
+                use_selected_columns=request.GET["export"] == "table",
+            )
+
+        # If this is an HTMX request, return only the rendered table HTML
+        if htmx_partial(request):
+            return render(
+                request,
+                "htmx/table.html",
+                {
+                    "object": instance,
+                    "table": table,
+                    "model": self.child_model,
+                },
+            )
+
+        return render(
+            request,
+            self.get_template_name(),
+            {
+                "object": instance,
+                "base_template": f"{instance._meta.app_label}/{instance._meta.model_name}.html",
+                "table": table,
+                "table_config": f"{table.name}_config",
+                "return_url": request.get_full_path(),
+            },
         )
 
 
