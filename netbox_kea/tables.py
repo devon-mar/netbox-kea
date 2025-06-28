@@ -133,7 +133,8 @@ class GenericTable(BaseTable):
         return len(self.data)
 
 
-class DHCPSubnetTable(BaseTable):
+class DHCPSubnetTable(NetBoxTable):
+    pk = None
     id = tables.Column(verbose_name="ID")
     subnet = tables.Column(
         linkify=lambda record, table: (
@@ -154,7 +155,7 @@ class DHCPSubnetTable(BaseTable):
 
     class Meta(NetBoxTable.Meta):
         model = DHCPSubnet
-        fields = ("id", "subnet", "shared_network", "actions")
+        fields = ("id", "subnet", "shared_network")
         default_columns = ("id", "subnet", "shared_network")
 
 
