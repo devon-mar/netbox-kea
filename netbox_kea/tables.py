@@ -126,7 +126,7 @@ class GenericTable(BaseTable):
 
     class Meta(BaseTable.Meta):
         empty_text = "No rows"
-        fields = ()
+        fields: tuple[str, ...] = ()
 
     @property
     def objects_count(self):
@@ -150,9 +150,9 @@ class SubnetTable(GenericTable):
         ),
     )
     shared_network = tables.Column(verbose_name="Shared Network")
-    actions = columns.ActionsColumn(actions=(), extra_buttons=SUBNET_ACTIONS)
+    actions = ActionsColumn(SUBNET_ACTIONS)
 
-    class Meta(NetBoxTable.Meta):
+    class Meta(GenericTable.Meta):
         empty_text = "No subnets"
         fields = ("id", "subnet", "shared_network", "actions")
         default_columns = ("id", "subnet", "shared_network")
