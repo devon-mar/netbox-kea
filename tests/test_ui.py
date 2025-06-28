@@ -867,7 +867,7 @@ def test_dhcp_lease_all_columns(
                     lease["duid"],
                     lease["type"],
                     "02:00:00",
-                    re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}"),
+                    re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"),
                     re.compile(r"\d{2}:\d{2}:\d{2}"),
                     str(lease["iaid"]),
                     re.compile(".*"),  # actions
