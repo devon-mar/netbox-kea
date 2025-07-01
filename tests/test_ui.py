@@ -487,6 +487,22 @@ def expect_form_error_search(page: Page, b: bool) -> None:
     expect(page.locator("#id_q + div.form-text.text-danger")).to_have_count(int(b))
 
 
+def _version_ge_43(page: Page) -> bool:
+    """
+    Return True if the version is >= 4.3.
+    """
+
+    old_version_strings = (
+        "(v4.0.11)",
+        '<li class="list-inline-item">NetBox Community v4.1.11</li>',
+        "NetBox Community v4.2",
+    )
+
+    content = page.content()
+
+    return not any(s in content for s in old_version_strings)
+
+
 def configure_table(page: Page, *selected_coumns: str) -> None:
     page.get_by_role("button", name=re.compile("Configure Table")).click()
 
@@ -501,7 +517,8 @@ def configure_table(page: Page, *selected_coumns: str) -> None:
         page.locator(f'#id_available_columns > option[value="{sc}"]').click()
         page.get_by_text("Add", exact=True).click()
 
-    page.get_by_role("button", name="Save").click()
+    with page.expect_navigation():
+        page.get_by_role("button", name="Save").click()
 
 
 @pytest.mark.parametrize(
@@ -834,7 +851,10 @@ def test_dhcp_lease_all_columns(
     )[0]["arguments"]
     assert lease is not None
 
-    search_lease(page, family, "IP Address", lease_ip)
+    def search() -> None:
+        search_lease(page, family, "IP Address", lease_ip)
+
+    search()
 
     if family == 6:
         configure_table(
@@ -852,6 +872,10 @@ def test_dhcp_lease_all_columns(
             "expires_in",
             "iaid",
         )
+        # NetBox v4.3 removes the query when saving the table config.
+        # See table tableConfig.ts in https://github.com/netbox-community/netbox/pull/19284.
+        if _version_ge_43(page):
+            search()
 
         def check():
             cltt = datetime.fromtimestamp(lease["cltt"], timezone.utc)
@@ -887,6 +911,8 @@ def test_dhcp_lease_all_columns(
             "expires_in",
             "client_id",
         )
+        if _version_ge_43(page):
+            search()
 
         def check():
             cltt = datetime.fromtimestamp(lease["cltt"], timezone.utc)
@@ -970,10 +996,15 @@ def test_dhcp_export_csv_all(
         "arguments"
     ]["leases"]
 
-    search_lease(
-        page, family, "Subnet", "2001:db8:1::/64" if family == 6 else "192.0.2.0/24"
-    )
+    def search() -> None:
+        return search_lease(
+            page, family, "Subnet", "2001:db8:1::/64" if family == 6 else "192.0.2.0/24"
+        )
+
+    search()
     configure_table(page, "ip_address", "hostname", "subnet_id")
+    if _version_ge_43(page):
+        search()
 
     page.get_by_role("button", name="Export").click()
     with page.expect_download() as dl:
