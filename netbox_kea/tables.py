@@ -93,8 +93,11 @@ class ActionsColumn(tables.TemplateColumn):
 
 
 class MonospaceColumn(tables.Column):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, attrs={"td": {"class": "font-monospace"}}, **kwargs)
+    def __init__(self, *args, additional_classes: list[str] | None = None, **kwargs):
+        cls_str = "font-monospace"
+        if additional_classes is not None:
+            cls_str += " " + " ".join(additional_classes)
+        super().__init__(*args, attrs={"td": {"class": cls_str}}, **kwargs)
 
 
 class ServerTable(NetBoxTable):
@@ -197,7 +200,7 @@ class LeaseTable4(BaseLeaseTable):
 class LeaseTable6(BaseLeaseTable):
     type = tables.Column(verbose_name="Type", accessor="type")
     preferred_lft = DurationColumn(verbose_name="Preferred Lifetime")
-    duid = MonospaceColumn(verbose_name="DUID")
+    duid = MonospaceColumn(verbose_name="DUID", additional_classes=["text-break"])
     iaid = MonospaceColumn(verbose_name="IAID")
 
     class Meta(BaseLeaseTable.Meta):

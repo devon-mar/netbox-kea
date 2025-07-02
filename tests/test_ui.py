@@ -1538,3 +1538,42 @@ def test_lease_pagination_location(
                 assert count_y > table_y
             case _:
                 assert False
+
+
+def test_dhcpv6_lease_long_duid(
+    page: Page, kea: KeaClient, with_test_server_only6: None
+) -> None:
+    """
+    Regression test for long DUIDs (#154).
+    """
+    lease_ip = "2001:db8:1::dead:beef"
+    kea.command(
+        "lease6-add",
+        service=["dhcp6"],
+        arguments={
+            "ip-address": lease_ip,
+            "duid": "01:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08",
+            "hw-address": "08:08:08:08:08:08",
+            "iaid": 1,
+            "valid-lft": 3600,
+            "hostname": "test-lease6",
+            "preferred-lft": 7200,
+        },
+    )
+
+    def search() -> None:
+        search_lease(page, 6, "IP Address", lease_ip)
+
+    search()
+    configure_table(
+        page,
+        "ip_address",
+        "duid",
+        "hostname",
+        "hw_address",
+    )
+    if _version_ge_43(page):
+        search()
+
+    # The last column should not be off the page.
+    expect(page.locator("table.object-list > tbody > tr > td").last).to_be_in_viewport()
