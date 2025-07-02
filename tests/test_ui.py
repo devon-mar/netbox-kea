@@ -1577,3 +1577,57 @@ def test_dhcpv6_lease_long_duid(
 
     # The last column should not be off the page.
     expect(page.locator("table.object-list > tbody > tr > td").last).to_be_in_viewport()
+
+
+def test_dhcp_lease_horizontal_scroll(
+    page: Page, kea: KeaClient, with_test_server_only6: None
+) -> None:
+    """
+    Regression test for long DUIDs (#154).
+    """
+    lease_ip = "2001:db8:1::dead:beef"
+    kea.command(
+        "lease6-add",
+        service=["dhcp6"],
+        arguments={
+            "ip-address": lease_ip,
+            "duid": "01:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08",
+            "hw-address": "08:08:08:08:08:08",
+            "iaid": 1,
+            "valid-lft": 3600,
+            "hostname": "test-lease6",
+            "preferred-lft": 7200,
+        },
+    )
+
+    def search() -> None:
+        search_lease(page, 6, "IP Address", lease_ip)
+
+    search()
+    configure_table(
+        page,
+        "ip_address",
+        "hostname",
+        "hw_address",
+        "cltt",
+        "subnet_id",
+        "valid_lft",
+        "duid",
+        "type",
+        "expires_at",
+        "expires_in",
+        "iaid",
+        "preferred_lft",
+    )
+    if _version_ge_43(page):
+        search()
+
+    cols = page.locator("table.object-list > tbody > tr > td").all()
+    preferred_lft_col = cols[-2]
+    # Make sure it's the preferred lifetime column
+    expect(preferred_lft_col).to_have_text("02:00:00")
+
+    # The last column should not be off the page.
+    expect(preferred_lft_col).not_to_be_in_viewport()
+    preferred_lft_col.scroll_into_view_if_needed()
+    expect(preferred_lft_col).to_be_in_viewport()
