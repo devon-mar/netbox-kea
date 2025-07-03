@@ -38,7 +38,7 @@
       <form method="post" action="{{ delete_action }}">
         {% csrf_token %}
         <input type="hidden" name="return_url" value="{{ request.path }}?{{ request.GET.urlencode }}" />
-        <div class="card">
+        <div class="card table-responsive">
           {% if paginator_placement == 'top' or paginator_placement == 'both' %}
             {% include "netbox_kea/inc/server_dhcp_leases_paginator.html" with table=table paginate=paginate placement="top" %}
           {% endif %}
