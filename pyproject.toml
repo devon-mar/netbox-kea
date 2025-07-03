@@ -1,6 +1,6 @@
 [project]
 name = "netbox-kea"
-version = "1.0.1"
+version = "1.0.2"
 description = ""
 readme = "README.md"
 # NetBox 4.10 requires Python 3.10
