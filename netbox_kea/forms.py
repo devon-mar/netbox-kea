@@ -182,6 +182,11 @@ class MultipleIPField(forms.MultipleChoiceField):
 
 
 class BaseLeaseDeleteForm(forms.Form):
+    # NetBox v4.4 requires a background_job field for the bulk_delete.html
+    # template.
+    background_job = forms.CharField(
+        required=False, widget=VeryHiddenInput, label="background_job"
+    )
     return_url = forms.CharField(
         required=False,
         widget=forms.HiddenInput(),
