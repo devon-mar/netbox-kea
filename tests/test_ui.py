@@ -603,8 +603,8 @@ def test_server_add_delete(
     server = nb_api.plugins.kea.servers.get(name=server_name)
     assert server is not None
 
-    page.get_by_role("link", name="Delete").click()
-    page.get_by_role("button", name="Delete").click()  # Confirm dialog
+    page.locator(".btn-list > a.btn-red").click()
+    page.locator(".modal-footer > button.btn-danger").click()  # Confirm dialog
 
     server = nb_api.plugins.kea.servers.get(name=server_name)
     assert server is None
