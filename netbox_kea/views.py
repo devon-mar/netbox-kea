@@ -158,7 +158,7 @@ class ServerStatusView(generic.ObjectView):
         return {"statuses": self._get_statuses(instance, instance.get_client())}
 
 
-class BaseServerLeasesView(Generic[T], generic.ObjectView):
+class BaseServerLeasesView(generic.ObjectView, Generic[T]):
     template_name = "netbox_kea/server_dhcp_leases.html"
     queryset = Server.objects.all()
     table: type[T]
