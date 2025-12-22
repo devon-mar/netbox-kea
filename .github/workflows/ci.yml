@@ -61,7 +61,7 @@ jobs:
           uv run pytest --tracing=retain-on-failure -v
 
       - name: Upload Playwright traces
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: playwright-traces
