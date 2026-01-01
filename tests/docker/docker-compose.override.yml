@@ -5,7 +5,7 @@ services:
     command: /usr/sbin/kea-dhcp6 -c /config/kea-dhcp6.conf
     volumes:
       - ./kea_configs/:/config/:ro
-      - kea-run:/run/kea-ctrl/
+      - kea-run:/var/run/kea/
   kea-dhcp4:
     <<: *kea
     image: docker.cloudsmith.io/isc/docker/kea-dhcp4:3.0.2
