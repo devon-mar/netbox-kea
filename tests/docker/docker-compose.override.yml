@@ -1,15 +1,14 @@
 ---
 services:
   kea-dhcp6: &kea
-    build:
-      context: .
-      dockerfile: Dockerfile-kea
+    image: docker.cloudsmith.io/isc/docker/kea-dhcp6:2.4.1
     command: /usr/sbin/kea-dhcp6 -c /config/kea-dhcp6.conf
     volumes:
       - ./kea_configs/:/config/:ro
-      - kea-run:/run/kea/
+      - kea-run:/run/kea-ctrl/
   kea-dhcp4:
     <<: *kea
+    image: docker.cloudsmith.io/isc/docker/kea-dhcp4:2.4.1
     command: /usr/sbin/kea-dhcp4 -c /config/kea-dhcp4.conf
   kea-ctrl-agent:
     <<: *kea
