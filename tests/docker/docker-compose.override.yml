@@ -1,17 +1,19 @@
 ---
 services:
   kea-dhcp6: &kea
-    image: docker.cloudsmith.io/isc/docker/kea-dhcp6:2.4.1
+    image: docker.cloudsmith.io/isc/docker/kea-dhcp6:3.0.2
     command: /usr/sbin/kea-dhcp6 -c /config/kea-dhcp6.conf
     volumes:
       - ./kea_configs/:/config/:ro
       - kea-run:/run/kea-ctrl/
   kea-dhcp4:
     <<: *kea
-    image: docker.cloudsmith.io/isc/docker/kea-dhcp4:2.4.1
+    image: docker.cloudsmith.io/isc/docker/kea-dhcp4:3.0.2
     command: /usr/sbin/kea-dhcp4 -c /config/kea-dhcp4.conf
   kea-ctrl-agent:
     <<: *kea
+    # 3.0.2 image does not have the control agent
+    image: docker.cloudsmith.io/isc/docker/kea-dhcp6:2.6.4
     command: /usr/sbin/kea-ctrl-agent -c /config/kea-ctrl-agent.conf
     depends_on:
       - kea-dhcp4
