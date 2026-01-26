@@ -112,7 +112,6 @@ class ServerTable(NetBoxTable):
             "name",
             "server_url",
             "username",
-            "password",
             "ssl_verify",
             "client_cert_path",
             "client_key_path",
