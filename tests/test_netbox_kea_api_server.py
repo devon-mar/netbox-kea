@@ -77,6 +77,30 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
         }
     }
 
+    # Ensure password is not a valid field
+    r = nb_http.post(
+        "http://localhost:8000/graphql/",
+        json={
+            "query": """
+{
+  server_list {
+    id
+    password
+  }
+}
+"""
+        },
+    )
+    assert r.ok is True
+
+    r_json = r.json()
+    assert r_json["data"] is None
+    assert len(r_json["errors"]) == 1
+    assert (
+        r_json["errors"][0]["message"]
+        == "Cannot query field 'password' on type 'ServerType'."
+    )
+
     r = nb_http.post(
         "http://localhost:8000/graphql/",
         json={

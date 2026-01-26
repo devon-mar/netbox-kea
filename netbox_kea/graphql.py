@@ -7,7 +7,18 @@ from . import models
 
 @strawberry_django.type(
     models.Server,
-    fields="__all__",
+    fields=(
+        "id",
+        "name",
+        "server_url",
+        "username",
+        "ssl_verify",
+        "client_cert_path",
+        "client_key_path",
+        "ca_file_path",
+        "dhcp6",
+        "dhcp4",
+    ),
 )
 class ServerType(NetBoxObjectType):
     pass
