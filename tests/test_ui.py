@@ -595,6 +595,10 @@ def test_server_add_delete(
     page.goto(f"{plugin_base}/servers/add/")
     expect(page).to_have_title(re.compile("^Add a new server.*"))
 
+    expect(page.get_by_label("Password", exact=True)).to_have_attribute(
+        "type", "password"
+    )
+
     page.get_by_label("Name", exact=True).fill(server_name)
     page.get_by_label("Server URL", exact=True).fill(kea_url)
     page.get_by_role("button", name="Create", exact=True).click()
@@ -631,6 +635,12 @@ def test_server_bulk_delete(
 def test_server_edit(page: Page, kea: KeaClient) -> None:
     new_name = "a_new_name"
     page.get_by_role("button", name="Edit").click()
+
+    # Ensure password field is empty and of type password
+    password_field = page.get_by_label("Password", exact=True)
+    expect(password_field).to_have_attribute("type", "password")
+    expect(password_field).to_have_value("")
+
     page.get_by_label("Name", exact=True).fill(new_name)
     page.get_by_role("button", name="Save").click()
     expect(page).to_have_title(re.compile(f"^{new_name}"))

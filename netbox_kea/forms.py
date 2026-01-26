@@ -28,6 +28,9 @@ class ServerForm(NetBoxModelForm):
             "dhcp4",
             "tags",
         )
+        widgets = {
+            "password": forms.PasswordInput(),
+        }
 
 
 class VeryHiddenInput(forms.HiddenInput):
