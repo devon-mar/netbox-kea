@@ -24,6 +24,7 @@ def test_server_api_add_delete(nb_api: pynetbox.api):
     server.update({"name": new_name})
     new_server = nb_api.plugins.kea.servers.get(name=new_name)
     assert new_server.name == new_name
+    assert hasattr(new_server, "password") is False
 
     assert server.delete() is True
 

@@ -29,3 +29,4 @@ class ServerSerializer(NetBoxModelSerializer):
             "last_updated",
         )
         brief_fields = ("id", "url", "name", "server_url")
+        extra_kwargs = {"password": {"write_only": True}}
