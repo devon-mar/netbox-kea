@@ -39,7 +39,6 @@ services:
       API_TOKEN_PEPPER_1: "G_^mFD_N5RTksrO#hiyCVWiS_^OTpuY6#D(NCYH2-CS+pjqrdc"
       WEBHOOKS_ENABLED: "true"
       SKIP_SUPERUSER: "false"
-      SUPERUSER_API_TOKEN: "0123456789abcdef0123456789abcdef01234567"
       SUPERUSER_EMAIL: "admin"
       SUPERUSER_NAME: "admin"
       SUPERUSER_PASSWORD: "admin"
