@@ -9,8 +9,18 @@ def netbox_url() -> str:
 
 
 @pytest.fixture(scope="session")
-def netbox_token() -> str:
-    return "0123456789abcdef0123456789abcdef01234567"
+def netbox_token(netbox_url: str) -> str:
+    resp = requests.post(
+        f"{netbox_url}/api/users/tokens/provision/",
+        json={"username": "admin", "password": "admin"},
+    )
+    resp.raise_for_status()
+
+    data = resp.json()
+    if data.get("version") == 2:
+        return f"nbt_{data['key']}.{data['token']}"
+    else:
+        return data["key"]
 
 
 @pytest.fixture(scope="session")
@@ -31,9 +41,10 @@ def kea_url() -> str:
 @pytest.fixture(scope="session")
 def nb_http(netbox_token: str) -> requests.Session:
     s = requests.Session()
+    auth_prefix = "Bearer" if netbox_token.startswith("nbt_") else "Token"
     s.headers.update(
         {
-            "Authorization": f"Token {netbox_token}",
+            "Authorization": f"{auth_prefix} {netbox_token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
