@@ -7,7 +7,8 @@ services:
       - postgres
       - redis
       - redis-cache
-    user: "unit:root"
+    # Use 999 for compatibility with nginx unit and granian
+    user: "999:root"
     ports:
       - 8000:8080
     healthcheck:
