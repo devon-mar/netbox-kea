@@ -3,6 +3,7 @@ import re
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from typing import Any, Literal
+from urllib.parse import quote_plus, urljoin
 
 import pynetbox
 import pytest
@@ -1372,7 +1373,12 @@ def test_lease_search_by_subnet_invalid_page(
     subnet_page: str,
 ) -> None:
     prefix = "2001:db8:1::/64" if family == 6 else "192.0.2.0/24"
-    page.goto(f"{page.url}/leases{family}/?q={prefix}&by=subnet&page={subnet_page}")
+    page.goto(
+        urljoin(
+            page.url,
+            f"leases{family}/?q={quote_plus(prefix)}&by=subnet&page={quote_plus(subnet_page)}",
+        )
+    )
     expect(page.locator("#lease-search").get_by_role("alert")).to_have_count(1)
 
 
@@ -1396,7 +1402,7 @@ def test_lease_search_page_param_without_subnet(
     search_lease(page, family, by, q)
     expect(page).to_have_url(re.compile("by="))
     page_param = "2001:db8:1::" if family == 6 else "192.0.2.0"
-    page.goto(f"{page.url}&page={page_param}")
+    page.goto(f"{page.url}&page={quote_plus(page_param)}")
     expect(page.locator("form.form").get_by_role("alert")).to_contain_text(
         "page is only supported with subnet."
     )
@@ -1437,13 +1443,13 @@ def test_one_service_only(
     expect(page.get_by_role("link", name="DHCPv6 Leases")).to_have_count(pages6)
     expect(page.get_by_role("link", name="DHCPv6 Subnets")).to_have_count(pages6)
 
-    page.goto(f"{server_url}/leases6/")
+    page.goto(urljoin(server_url, "leases6/"))
     if version == 4:
         expect(page).to_have_url(server_url)
     else:
         expect(page).not_to_have_url(server_url)
 
-    page.goto(f"{server_url}/leases4/")
+    page.goto(urljoin(server_url, "leases4/"))
     if version == 6:
         expect(page).to_have_url(server_url)
     else:
