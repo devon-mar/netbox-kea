@@ -5,7 +5,7 @@ class NetBoxKeaConfig(PluginConfig):
     name = "netbox_kea"
     verbose_name = "Kea"
     description = "Kea integration for NetBox"
-    version = "1.0.3"
+    version = "1.0.4"
     base_url = "kea"
     default_settings = {"kea_timeout": 30}
 
