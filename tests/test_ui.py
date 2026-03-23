@@ -17,19 +17,6 @@ from . import constants
 from .kea import KeaClient
 
 
-@pytest.fixture
-def requests_session(nb_api: pynetbox.api) -> requests.Session:
-    s = requests.Session()
-    s.headers.update(
-        {
-            "Authorization": f"Token {nb_api.token}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-    )
-    return s
-
-
 @pytest.fixture(autouse=True)
 def clear_leases(kea_client: KeaClient) -> None:
     kea_client.command("lease4-wipe", service=["dhcp4"], check=(0, 3))
@@ -37,21 +24,19 @@ def clear_leases(kea_client: KeaClient) -> None:
 
 
 @pytest.fixture(autouse=True)
-def reset_user_preferences(
-    requests_session: requests.Session, nb_api: pynetbox.api
-) -> None:
-    r = requests_session.get(url=f"{nb_api.base_url}/users/config/")
+def reset_user_preferences(nb_http: requests.Session, nb_api: pynetbox.api) -> None:
+    r = nb_http.get(url=f"{nb_api.base_url}/users/config/")
     r.raise_for_status()
     tables_config = r.json().get("tables", {})
 
     # pynetbox doesn't support this endpoint
-    requests_session.patch(
+    nb_http.patch(
         url=f"{nb_api.base_url}/users/config/",
         json={"tables": {k: {} for k in tables_config}},
     ).raise_for_status()
 
     # restore pagination
-    requests_session.patch(
+    nb_http.patch(
         url=f"{nb_api.base_url}/users/config/",
         json={"pagination": {"placement": "bottom"}},
     ).raise_for_status()
@@ -1511,7 +1496,7 @@ def test_lease_to_vm(
 @pytest.mark.parametrize("version", (6, 4))
 def test_lease_pagination_location(
     page: Page,
-    requests_session: requests.Session,
+    nb_http: requests.Session,
     nb_api: pynetbox.api,
     with_test_server: None,
     request: pytest.FixtureRequest,
@@ -1523,7 +1508,7 @@ def test_lease_pagination_location(
     ip = lease_args["ip-address"]
 
     # pynetbox doesn't support this endpoint
-    requests_session.patch(
+    nb_http.patch(
         url=f"{nb_api.base_url}/users/config/",
         json={"pagination": {"placement": placement}},
     ).raise_for_status()
