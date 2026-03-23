@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
+from netbox.constants import CENSOR_TOKEN, CENSOR_TOKEN_CHANGED
 from netbox.models import NetBoxModel
 
 from .kea import KeaClient
@@ -111,3 +112,21 @@ class Server(NetBoxModel):
                 raise ValidationError(
                     {"dhcp4": f"Unable to get DHCPv4 version: {repr(e)}"}
                 ) from e
+
+    def to_objectchange(self, action: str) -> None:
+        objectchange = super().to_objectchange(action)
+
+        prechange_data = objectchange.prechange_data or {}
+        if prechange_data.get("password"):
+            prechange_data["password"] = CENSOR_TOKEN
+
+        if (post_data := objectchange.postchange_data) and (
+            post_password := post_data.get("password")
+        ):
+            post_data["password"] = (
+                CENSOR_TOKEN_CHANGED
+                if post_password != prechange_data.get("password")
+                else CENSOR_TOKEN
+            )
+
+        return objectchange
