@@ -290,3 +290,94 @@ def test_server_create_dhcp4_false_dhcp6_false(
             dhcp4=False,
             dhcp6=False,
         )
+
+
+def test_server_api_changelog_password_censored(
+    nb_api: pynetbox.api, nb_http: requests.Session
+):
+    name = "changelog-test"
+    server_url = "http://kea-ctrl-agent:8000"
+
+    server = nb_api.plugins.kea.servers.create(name=name, server_url=server_url)
+    assert server.name == name
+
+    version = nb_api.status()["netbox-version"]
+
+    object_changes = (
+        nb_api.extras.object_changes
+        if version.startswith("4.0")
+        else nb_api.core.object_changes
+    )
+
+    # pynetbox has a special model for core.object_changes but not for extras.object_changes
+    # (as of v7.6.1). Cast to dict to make it consistent.
+    changelog_create = dict(
+        object_changes.get(
+            changed_object_id=server.id,
+            changed_object_type="netbox_kea.server",
+            action="create",
+        )
+    )
+    assert changelog_create["prechange_data"] == {}
+    assert changelog_create["postchange_data"]["password"] is None
+
+    # Cannot update through pynetbox since the password field is write only.
+    def update_password(password: str | None) -> None:
+        resp = nb_http.patch(
+            server.url,
+            json={"password": password},
+            timeout=20,
+        )
+        resp.raise_for_status()
+
+    # Set the password
+    update_password("password0")
+
+    changelog_update0 = dict(
+        object_changes.get(
+            changed_object_id=server.id,
+            changed_object_type="netbox_kea.server",
+            action="update",
+        )
+    )
+    assert changelog_update0["prechange_data"]["password"] is None
+    assert changelog_update0["postchange_data"]["password"] == "***CHANGED***"
+
+    # Update the password
+    update_password("password1")
+
+    changelog_update1 = dict(
+        object_changes.get(
+            id__gt=changelog_update0["id"],
+            changed_object_id=server.id,
+            changed_object_type="netbox_kea.server",
+            action="update",
+        )
+    )
+    assert changelog_update1["prechange_data"]["password"] == "********"
+    assert changelog_update1["postchange_data"]["password"] == "***CHANGED***"
+
+    # Remove the password
+    update_password(None)
+    changelog_update2 = dict(
+        object_changes.get(
+            id__gt=changelog_update1["id"],
+            changed_object_id=server.id,
+            changed_object_type="netbox_kea.server",
+            action="update",
+        )
+    )
+    assert changelog_update2["prechange_data"]["password"] == "********"
+    assert changelog_update2["postchange_data"]["password"] is None
+
+    # Delete the server
+    assert server.delete() is True
+    changelog_delete = dict(
+        object_changes.get(
+            changed_object_id=server.id,
+            changed_object_type="netbox_kea.server",
+            action="delete",
+        )
+    )
+    assert changelog_delete["prechange_data"]["password"] is None
+    assert changelog_delete["postchange_data"] == {}
