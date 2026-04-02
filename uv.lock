@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -710,14 +710,14 @@ wheels = [
 
 [[package]]
 name = "types-requests"
-version = "2.32.4.20260107"
+version = "2.33.0.20260402"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/f3/a0663907082280664d745929205a89d41dffb29e89a50f753af7d57d0a96/types_requests-2.32.4.20260107.tar.gz", hash = "sha256:018a11ac158f801bfa84857ddec1650750e393df8a004a8a9ae2a9bec6fcb24f", size = 23165, upload-time = "2026-01-07T03:20:54.091Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c1/7b/a06527d20af1441d813360b8e0ce152a75b7d8e4aab7c7d0a156f405d7ec/types_requests-2.33.0.20260402.tar.gz", hash = "sha256:1bdd3ada9b869741c5c4b887d2c8b4e38284a1449751823b5ebbccba3eefd9da", size = 23851, upload-time = "2026-04-02T04:19:55.942Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/12/709ea261f2bf91ef0a26a9eed20f2623227a8ed85610c1e54c5805692ecb/types_requests-2.32.4.20260107-py3-none-any.whl", hash = "sha256:b703fe72f8ce5b31ef031264fe9395cac8f46a04661a79f7ed31a80fb308730d", size = 20676, upload-time = "2026-01-07T03:20:52.929Z" },
+    { url = "https://files.pythonhosted.org/packages/51/65/3853bb6bac5ae789dc7e28781154705c27859eccc8e46282c3f36780f5f5/types_requests-2.33.0.20260402-py3-none-any.whl", hash = "sha256:c98372d7124dd5d10af815ee25c013897592ff92af27b27e22c98984102c3254", size = 20739, upload-time = "2026-04-02T04:19:54.955Z" },
 ]
 
 [[package]]
