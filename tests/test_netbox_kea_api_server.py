@@ -10,16 +10,18 @@ from . import constants
 
 def test_server_api_add_delete(nb_api: pynetbox.api):
     name = "test"
-    server_url = "http://kea-ctrl-agent:8000"
 
-    server = nb_api.plugins.kea.servers.create(name=name, server_url=server_url)
+    server = nb_api.plugins.kea.servers.create(
+        name=name, dhcp6_url=constants.KEA6_URL, dhcp4_url=constants.KEA4_URL
+    )
     assert server.name == name
-    assert server.server_url == server_url
+    assert server.dhcp4_url == constants.KEA4_URL
+    assert server.dhcp6_url == constants.KEA6_URL
 
     # We shouldn't be able to add a server with the same name
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(
-            name=name, server_url="http://kea-ctrl-agent:8000"
+            name=name, dhcp6_url=constants.KEA6_URL, dhcp4_url=constants.KEA4_URL
         )
 
     new_name = "new-name"
@@ -34,8 +36,8 @@ def test_server_api_add_delete(nb_api: pynetbox.api):
 def test_server_api_bulk_actions(nb_api: pynetbox.api):
     servers = nb_api.plugins.kea.servers.create(
         [
-            {"name": "server1", "server_url": "http://kea-ctrl-agent:8000"},
-            {"name": "server2", "server_url": "http://kea-ctrl-agent:8000"},
+            {"name": "server1", "dhcp4_url": constants.KEA4_URL},
+            {"name": "server2", "dhcp6_url": constants.KEA6_URL},
         ]
     )
     for s in servers:
@@ -48,7 +50,7 @@ def test_server_api_bulk_actions(nb_api: pynetbox.api):
 
 def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
     server = nb_api.plugins.kea.servers.create(
-        name="gql-test", server_url="http://kea-ctrl-agent:8000"
+        name="gql-test", dhcp6_url=constants.KEA6_URL, dhcp4_url=constants.KEA4_URL
     )
     r = nb_http.post(
         "http://localhost:8000/graphql/",
@@ -58,7 +60,8 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
   server_list {
     id
     name
-    server_url
+    dhcp4_url
+    dhcp6_url
   }
 }
 """
@@ -73,7 +76,8 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
                 {
                     "id": str(server.id),
                     "name": server.name,
-                    "server_url": server.server_url,
+                    "dhcp4_url": server.dhcp4_url,
+                    "dhcp6_url": server.dhcp6_url,
                 }
             ]
         }
@@ -111,7 +115,8 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
     server(id: %s) {
     id
     name
-    server_url
+    dhcp4_url
+    dhcp6_url
   }
 }
 """  # noqa: UP031
@@ -125,7 +130,8 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
             "server": {
                 "id": str(server.id),
                 "name": server.name,
-                "server_url": server.server_url,
+                "dhcp4_url": server.dhcp4_url,
+                "dhcp6_url": server.dhcp6_url,
             }
         }
     }
@@ -137,7 +143,8 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
         pytest.param(
             {
                 "name": "cert-no-key",
-                "server_url": "http://kea-ctrl-agent:8000",
+                # TODO
+                "dhcp4_url": "http://kea-dhcp4:8000",
                 "client_cert_path": "/root/mycert.crt",
             },
             id="client-cert-no-key",
@@ -152,16 +159,19 @@ def test_api_add_failures(body: dict[str, Any], nb_api: pynetbox.api):
 def test_server_create_basic_auth(nb_api: pynetbox.api) -> None:
     nb_api.plugins.kea.servers.create(
         name="basic",
-        server_url=constants.KEA_BASIC_URL,
+        dhcp6_url=constants.KEA6_URL_BASIC,
+        dhcp4_url=constants.KEA4_URL_BASIC,
         username=constants.KEA_BASIC_USERNAME,
         password=constants.KEA_BASIC_PASSWORD,
+        ca_file_path=constants.KEA_CA,
     )
 
 
 def test_server_create_client_cert(nb_api: pynetbox.api) -> None:
     nb_api.plugins.kea.servers.create(
         name="client_cert",
-        server_url=constants.KEA_CERT_URL,
+        dhcp6_url=constants.KEA6_URL_CERT,
+        dhcp4_url=constants.KEA4_URL_CERT,
         client_cert_path=constants.KEA_CLIENT_CERT,
         client_key_path=constants.KEA_CLIENT_KEY,
         ca_file_path=constants.KEA_CA,
@@ -172,18 +182,22 @@ def test_server_create_invalid_key(nb_api: pynetbox.api) -> None:
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(
             name="client_cert",
-            server_url=constants.KEA_CERT_URL,
+            dhcp6_url=constants.KEA6_URL_CERT,
+            dhcp4_url=constants.KEA4_URL_CERT,
             client_cert_path=constants.KEA_CLIENT_CERT,
             client_key_path="foo",
             ca_file_path=constants.KEA_CA,
         )
 
 
-def test_server_create_invalid_cert(nb_api: pynetbox.api) -> None:
+def test_server_create_invalid_cert(
+    nb_api: pynetbox.api,
+) -> None:
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(
             name="client_cert",
-            server_url=constants.KEA_CERT_URL,
+            dhcp6_url=constants.KEA6_URL_CERT,
+            dhcp4_url=constants.KEA4_URL_CERT,
             client_cert_path="foo",
             client_key_path=constants.KEA_CLIENT_KEY,
             ca_file_path=constants.KEA_CA,
@@ -194,7 +208,8 @@ def test_server_create_key_no_cert(nb_api: pynetbox.api) -> None:
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(
             name="client_cert",
-            server_url=constants.KEA_CERT_URL,
+            dhcp6_url=constants.KEA6_URL_CERT,
+            dhcp4_url=constants.KEA4_URL_CERT,
             client_key_path=constants.KEA_CLIENT_KEY,
             ca_file_path=constants.KEA_CA,
         )
@@ -204,7 +219,8 @@ def test_server_create_cert_no_key(nb_api: pynetbox.api) -> None:
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(
             name="client_cert",
-            server_url=constants.KEA_CERT_URL,
+            dhcp6_url=constants.KEA6_URL_CERT,
+            dhcp4_url=constants.KEA4_URL_CERT,
             client_cert_path=constants.KEA_CLIENT_CERT,
             ca_file_path=constants.KEA_CA,
         )
@@ -213,7 +229,7 @@ def test_server_create_cert_no_key(nb_api: pynetbox.api) -> None:
 def test_server_create_https(nb_api: pynetbox.api) -> None:
     nb_api.plugins.kea.servers.create(
         name="https",
-        server_url=constants.KEA_HTTPS_URL,
+        dhcp6_url=constants.KEA6_URL_SECURE,
         ca_file_path=constants.KEA_CA,
     )
 
@@ -222,7 +238,7 @@ def test_server_create_ca_ssl_verify_false(nb_api: pynetbox.api) -> None:
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(
             name="https",
-            server_url=constants.KEA_HTTPS_URL,
+            dhcp4_url=constants.KEA4_URL_SECURE,
             ca_file_path=constants.KEA_CA,
             ssl_verify=False,
         )
@@ -232,16 +248,14 @@ def test_server_create_untrusted(nb_api: pynetbox.api) -> None:
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(
             name="https",
-            server_url=constants.KEA_HTTPS_URL,
+            dhcp4_url=constants.KEA4_URL_SECURE,
         )
 
 
-def test_server_create_no_ssl_verify(
-    nb_api: pynetbox.api,
-) -> None:
+def test_server_create_no_ssl_verify(nb_api: pynetbox.api) -> None:
     nb_api.plugins.kea.servers.create(
         name="insecure",
-        server_url=constants.KEA_HTTPS_URL,
+        dhcp6_url=constants.KEA6_URL_SECURE,
         ssl_verify=False,
     )
 
@@ -250,9 +264,6 @@ def test_server_create_dhcp4_false_dhcp6_false(nb_api: pynetbox.api) -> None:
     with pytest.raises(RequestError):
         nb_api.plugins.kea.servers.create(
             name="no-services-enabled",
-            server_url=constants.KEA_URL,
-            dhcp4=False,
-            dhcp6=False,
         )
 
 
@@ -260,9 +271,8 @@ def test_server_api_changelog_password_censored(
     nb_api: pynetbox.api, nb_http: requests.Session
 ):
     name = "changelog-test"
-    server_url = "http://kea-ctrl-agent:8000"
 
-    server = nb_api.plugins.kea.servers.create(name=name, server_url=server_url)
+    server = nb_api.plugins.kea.servers.create(name=name, dhcp6_url=constants.KEA6_URL)
     assert server.name == name
 
     version = nb_api.status()["netbox-version"]

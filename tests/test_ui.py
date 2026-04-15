@@ -18,9 +18,9 @@ from .kea import KeaClient
 
 
 @pytest.fixture(autouse=True)
-def clear_leases(kea_client: KeaClient) -> None:
-    kea_client.command("lease4-wipe", service=["dhcp4"], check=(0, 3))
-    kea_client.command("lease6-wipe", service=["dhcp6"], check=(0, 3))
+def clear_leases(kea4_client: KeaClient, kea6_client: KeaClient) -> None:
+    kea4_client.command("lease4-wipe", check=(0, 3))
+    kea6_client.command("lease6-wipe", check=(0, 3))
 
 
 @pytest.fixture(autouse=True)
@@ -49,7 +49,7 @@ def with_test_server(
     netbox_login: None,
 ):
     server = nb_api.plugins.kea.servers.create(
-        name="test", server_url=constants.KEA_URL
+        name="test", dhcp4_url=constants.KEA4_URL, dhcp6_url=constants.KEA6_URL
     )
     page.goto(f"{constants.PLUGIN_BASE_URL}/servers/{server.id}/")
     yield
@@ -63,7 +63,7 @@ def with_test_server_only6(
     netbox_login: None,
 ):
     server = nb_api.plugins.kea.servers.create(
-        name="only6", server_url=constants.KEA_URL, dhcp4=False, dhcp6=True
+        name="only6", dhcp6_url=constants.KEA6_URL
     )
     page.goto(f"{constants.PLUGIN_BASE_URL}/servers/{server.id}/")
     yield
@@ -77,7 +77,7 @@ def with_test_server_only4(
     netbox_login: None,
 ):
     server = nb_api.plugins.kea.servers.create(
-        name="only4", server_url=constants.KEA_URL, dhcp4=True, dhcp6=False
+        name="only4", dhcp4_url=constants.KEA4_URL
     )
     page.goto(f"{constants.PLUGIN_BASE_URL}/servers/{server.id}/")
     yield
@@ -85,21 +85,30 @@ def with_test_server_only4(
 
 
 @pytest.fixture
-def kea_client() -> KeaClient:
-    return KeaClient("http://localhost:8001")
+def kea4_client() -> KeaClient:
+    return KeaClient("http://localhost:8040")
 
 
 @pytest.fixture
-def kea(with_test_server: None, kea_client: KeaClient) -> KeaClient:
-    return kea_client
+def kea6_client() -> KeaClient:
+    return KeaClient("http://localhost:8060")
 
 
 @pytest.fixture
-def lease6(kea: KeaClient) -> dict[str, Any]:
+def kea4(with_test_server: None, kea4_client: KeaClient) -> KeaClient:
+    return kea4_client
+
+
+@pytest.fixture
+def kea6(with_test_server: None, kea6_client: KeaClient) -> KeaClient:
+    return kea6_client
+
+
+@pytest.fixture
+def lease6(kea6: KeaClient) -> dict[str, Any]:
     lease_ip = "2001:db8:1::1"
-    kea.command(
+    kea6.command(
         "lease6-add",
-        service=["dhcp6"],
         arguments={
             "ip-address": lease_ip,
             "duid": "01:02:03:04:05:06:07:08",
@@ -110,9 +119,9 @@ def lease6(kea: KeaClient) -> dict[str, Any]:
             "preferred-lft": 7200,
         },
     )
-    lease = kea.command(
-        "lease6-get", arguments={"ip-address": lease_ip}, service=["dhcp6"]
-    )[0]["arguments"]
+    lease = kea6.command("lease6-get", arguments={"ip-address": lease_ip})[0][
+        "arguments"
+    ]
     assert lease is not None
     return lease
 
@@ -212,11 +221,10 @@ def lease6_netbox_ip(nb_api: pynetbox.api, lease6: dict[str, Any]):
 
 
 @pytest.fixture
-def lease4(kea: KeaClient) -> dict[str, Any]:
+def lease4(kea4: KeaClient) -> dict[str, Any]:
     lease_ip = "192.0.2.1"
-    kea.command(
+    kea4.command(
         "lease4-add",
-        service=["dhcp4"],
         arguments={
             "ip-address": lease_ip,
             "hw-address": "08:08:08:08:08:08",
@@ -224,9 +232,9 @@ def lease4(kea: KeaClient) -> dict[str, Any]:
             "hostname": "test-lease4",
         },
     )
-    lease = kea.command(
-        "lease4-get", arguments={"ip-address": lease_ip}, service=["dhcp4"]
-    )[0]["arguments"]
+    lease = kea4.command("lease4-get", arguments={"ip-address": lease_ip})[0][
+        "arguments"
+    ]
     assert lease is not None
     return lease
 
@@ -329,11 +337,10 @@ def lease4_netbox_ip(nb_api: pynetbox.api, lease4: dict[str, Any]):
 
 
 @pytest.fixture
-def leases6_250(kea: KeaClient) -> None:
+def leases6_250(kea6: KeaClient) -> None:
     for i in range(1, 251):
-        kea.command(
+        kea6.command(
             "lease6-add",
-            service=["dhcp6"],
             arguments={
                 "ip-address": f"2001:db8:1::{i:x}",
                 "duid": str(EUI(i * 10, dialect=mac_unix_expanded)),
@@ -347,11 +354,10 @@ def leases6_250(kea: KeaClient) -> None:
 
 
 @pytest.fixture
-def leases4_250(kea: KeaClient) -> None:
+def leases4_250(kea4: KeaClient) -> None:
     for i in range(1, 251):
-        kea.command(
+        kea4.command(
             "lease4-add",
-            service=["dhcp4"],
             arguments={
                 "ip-address": f"192.0.2.{i}",
                 "client-id": str(EUI(i * 10, dialect=mac_unix_expanded)),
@@ -496,10 +502,10 @@ def configure_table(page: Page, *selected_coumns: str) -> None:
 
     # Wait for modal to be visible. Otherwise, selected_count might
     # be wrong.
-    remove_button = page.get_by_text("Remove")
-    expect(remove_button).to_be_visible()
+    expect(page.get_by_role("heading", name="Table Configuration")).to_be_visible()
 
     # Clear all selected columns
+    remove_button = page.get_by_text("Remove")
     selected_count = page.locator("#id_columns > option").count()
     for i in range(selected_count):
         page.locator("#id_columns > option").first.click()
@@ -590,7 +596,8 @@ def test_server_add_delete(page: Page, nb_api: pynetbox.api) -> None:
     )
 
     page.get_by_label("Name", exact=True).fill(server_name)
-    page.get_by_label("Server URL", exact=True).fill(constants.KEA_URL)
+    page.get_by_label("DHCPv4 Server URL", exact=True).fill(constants.KEA4_URL)
+    page.get_by_label("DHCPv6 Server URL", exact=True).fill(constants.KEA6_URL)
     page.get_by_role("button", name="Create", exact=True).click()
 
     expect(page).to_have_title(re.compile(f"^{server_name}"))
@@ -607,8 +614,8 @@ def test_server_add_delete(page: Page, nb_api: pynetbox.api) -> None:
 def test_server_bulk_delete(page: Page, nb_api: pynetbox.api):
     nb_api.plugins.kea.servers.create(
         [
-            {"name": "server1", "server_url": constants.KEA_URL},
-            {"name": "server2", "server_url": constants.KEA_URL},
+            {"name": "server1", "dhcp6_url": constants.KEA6_URL},
+            {"name": "server2", "dhcp6_url": constants.KEA6_URL},
         ]
     )
 
@@ -620,7 +627,7 @@ def test_server_bulk_delete(page: Page, nb_api: pynetbox.api):
     assert nb_api.plugins.kea.servers.count() == 0
 
 
-def test_server_edit(page: Page, kea: KeaClient) -> None:
+def test_server_edit(page: Page, with_test_server: None) -> None:
     new_name = "a_new_name"
     page.get_by_role("button", name="Edit").click()
 
@@ -634,19 +641,13 @@ def test_server_edit(page: Page, kea: KeaClient) -> None:
     expect(page).to_have_title(re.compile(f"^{new_name}"))
 
 
-def test_server_status(page: Page, kea: KeaClient) -> None:
+def test_server_status(page: Page, kea4: KeaClient, kea6: KeaClient) -> None:
     page.get_by_role("link", name="Status").click()
 
-    ctrl_version = kea.command("version-get")[0]["arguments"]["extended"]
-    dhcp4_version = kea.command("version-get", service=["dhcp4"])[0]["arguments"][
-        "extended"
-    ]
-    dhcp6_version = kea.command("version-get", service=["dhcp6"])[0]["arguments"][
-        "extended"
-    ]
+    dhcp4_version = kea4.command("version-get")[0]["arguments"]["extended"]
+    dhcp6_version = kea6.command("version-get")[0]["arguments"]["extended"]
 
     locator = page.locator(".tab-content")
-    expect(locator).to_contain_text(ctrl_version)
     expect(locator).to_contain_text(dhcp4_version)
     expect(locator).to_contain_text(dhcp6_version)
 
@@ -672,7 +673,7 @@ def test_server_status(page: Page, kea: KeaClient) -> None:
 )
 def test_dhcp_subnets(
     page: Page,
-    kea: KeaClient,
+    with_test_server: None,
     family: str,
     subnets: Sequence[tuple[str, str, str | None]],
 ) -> None:
@@ -745,7 +746,7 @@ def test_dhcp_subnets(
     ),
 )
 def test_dhcp_subnets_export_csv(
-    page: Page, kea: KeaClient, family: int, all_data: bool, expected_data: bool
+    page: Page, with_test_server: None, family: int, all_data: bool, expected_data: bool
 ) -> None:
     page.get_by_role("link", name=f"DHCPv{family} Subnets").click()
 
@@ -767,7 +768,9 @@ def test_dhcp_subnets_export_csv(
 
 
 @pytest.mark.parametrize("family", (4, 6))
-def test_dhcp_subnets_configure_table(page: Page, kea: KeaClient, family: int) -> None:
+def test_dhcp_subnets_configure_table(
+    page: Page, with_test_server: None, family: int
+) -> None:
     page.get_by_role("link", name=f"DHCPv{family} Subnets").click()
 
     configure_table(page, "subnet")
@@ -822,7 +825,7 @@ def test_dhcp_subnets_configure_table(page: Page, kea: KeaClient, family: int) -
     ),
 )
 def test_dhcp_lease_invalid_search_values(
-    page: Page, kea: KeaClient, version: int, by: str, q: str
+    page: Page, with_test_server: KeaClient, version: int, by: str, q: str
 ) -> None:
     page.get_by_role("link", name=f"DHCPv{version} Leases").click()
     page.locator("#id_q").fill(q)
@@ -837,14 +840,15 @@ def test_dhcp_lease_invalid_search_values(
 
 @pytest.mark.parametrize("family", (4, 6))
 def test_dhcp_lease_all_columns(
-    page: Page, kea: KeaClient, family: Literal[6, 4], request: pytest.FixtureRequest
+    page: Page, family: Literal[6, 4], request: pytest.FixtureRequest
 ) -> None:
     lease_args = request.getfixturevalue(f"lease{family}")
     lease_ip = lease_args["ip-address"]
 
+    kea: KeaClient = request.getfixturevalue(f"kea{family}")
+
     lease = kea.command(
         f"lease{family}-get",
-        service=[f"dhcp{family}"],
         arguments={"ip-address": lease_ip},
     )[0]["arguments"]
     assert lease is not None
@@ -982,17 +986,15 @@ def test_dhcp_lease_all_columns(
 )
 def test_dhcp_export_csv_all(
     page: Page,
-    kea: KeaClient,
     family: Literal[4, 6],
     all_data: bool,
     check_fields: tuple[tuple[str, str], ...],
     request: pytest.FixtureRequest,
 ):
-    request.getfixturevalue(f"leases{family}_250")
+    _ = request.getfixturevalue(f"leases{family}_250")
+    kea: KeaClient = request.getfixturevalue(f"kea{family}")
 
-    leases = kea.command(f"lease{family}-get-all", service=[f"dhcp{family}"])[0][
-        "arguments"
-    ]["leases"]
+    leases = kea.command(f"lease{family}-get-all")[0]["arguments"]["leases"]
 
     def search() -> None:
         return search_lease(
@@ -1027,11 +1029,11 @@ def test_dhcp_export_csv_all(
 @pytest.mark.parametrize("family", (6, 4))
 def test_lease_delete(
     page: Page,
-    kea: KeaClient,
     family: Literal[6, 4],
     request: pytest.FixtureRequest,
 ) -> None:
     ip = request.getfixturevalue(f"lease{family}")["ip-address"]
+    kea = request.getfixturevalue(f"kea{family}")
 
     search_lease(page, family, "IP Address", ip)
 
@@ -1048,7 +1050,6 @@ def test_lease_delete(
 
     kea.command(
         f"lease{family}-get",
-        service=[f"dhcp{family}"],
         arguments={"ip-address": ip},
         check=(3,),
     )
@@ -1079,7 +1080,7 @@ def test_lease_delete(
 @pytest.mark.parametrize("family", (6, 4))
 def test_lease_delete_no_permission(
     page: Page,
-    kea: KeaClient,
+    with_test_server: None,
     netbox_username: str,
     family: Literal[6, 4],
     request: pytest.FixtureRequest,
@@ -1116,7 +1117,7 @@ def test_lease_delete_no_permission(
 @pytest.mark.parametrize("family", (6, 4))
 def test_lease_delete_no_permission_on_confirm(
     page: Page,
-    kea: KeaClient,
+    with_test_server: None,
     nb_api: pynetbox.api,
     netbox_username: str,
     family: Literal[6, 4],
@@ -1148,11 +1149,11 @@ def test_lease_delete_no_permission_on_confirm(
 @pytest.mark.parametrize("family", (6, 4))
 def test_lease_deleted_before_delete(
     page: Page,
-    kea: KeaClient,
     family: Literal[6, 4],
     request: pytest.FixtureRequest,
 ) -> None:
     ip = request.getfixturevalue(f"lease{family}")["ip-address"]
+    kea: KeaClient = request.getfixturevalue(f"kea{family}")
 
     search_lease(page, family, "IP Address", ip)
 
@@ -1160,9 +1161,7 @@ def test_lease_deleted_before_delete(
     page.locator('input[name="pk"]').check()
     page.get_by_role("button", name="Delete Selected").click()
 
-    kea.command(
-        f"lease{family}-del", service=[f"dhcp{family}"], arguments={"ip-address": ip}
-    )
+    kea.command(f"lease{family}-del", arguments={"ip-address": ip})
 
     page.locator('button[name="_confirm"]').click()
     # Kea will return status 3
@@ -1174,7 +1173,7 @@ def test_lease_deleted_before_delete(
 @pytest.mark.parametrize("family", (6, 4))
 def test_lease_deleted_invalid_ip(
     page: Page,
-    kea: KeaClient,
+    with_test_server: None,
     family: Literal[6, 4],
     request: pytest.FixtureRequest,
 ) -> None:
@@ -1193,7 +1192,7 @@ def test_lease_deleted_invalid_ip(
 @pytest.mark.parametrize("family", (6, 4))
 def test_lease_deleted_invalid_ip_confirm(
     page: Page,
-    kea: KeaClient,
+    with_test_server: None,
     family: Literal[6, 4],
     request: pytest.FixtureRequest,
 ) -> None:
@@ -1354,7 +1353,7 @@ def test_lease_search_by_subnet(
 )
 def test_lease_search_by_subnet_invalid_page(
     page: Page,
-    kea: KeaClient,
+    with_test_server: None,
     family: Literal[6, 4],
     subnet_page: str,
 ) -> None:
@@ -1383,7 +1382,7 @@ def test_lease_search_by_subnet_invalid_page(
     ),
 )
 def test_lease_search_page_param_without_subnet(
-    page: Page, kea: KeaClient, family: Literal[4, 6], by: str, q: str
+    page: Page, with_test_server: None, family: Literal[4, 6], by: str, q: str
 ) -> None:
     search_lease(page, family, by, q)
     expect(page).to_have_url(re.compile("by="))
@@ -1400,7 +1399,7 @@ def test_filter_servers_by_tag(
     page: Page,
 ) -> None:
     nb_api.plugins.kea.servers.create(
-        name="tag-test", server_url=constants.KEA_URL, tags=[{"name": test_tag}]
+        name="tag-test", dhcp6_url=constants.KEA6_URL, tags=[{"name": test_tag}]
     )
 
     page.goto(f"{constants.PLUGIN_BASE_URL}/servers/")
@@ -1541,15 +1540,14 @@ def test_lease_pagination_location(
 
 
 def test_dhcpv6_lease_long_duid(
-    page: Page, kea: KeaClient, with_test_server_only6: None
+    page: Page, kea6: KeaClient, with_test_server_only6: None
 ) -> None:
     """
     Regression test for long DUIDs (#154).
     """
     lease_ip = "2001:db8:1::dead:beef"
-    kea.command(
+    kea6.command(
         "lease6-add",
-        service=["dhcp6"],
         arguments={
             "ip-address": lease_ip,
             "duid": "01:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08:02:03:04:05:06:07:08",

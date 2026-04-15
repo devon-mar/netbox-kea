@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -12,7 +13,12 @@ from .kea import KeaClient
 
 class Server(NetBoxModel):
     name = models.CharField(unique=True, max_length=255)
-    server_url = models.CharField(verbose_name="Server URL", max_length=255)
+    dhcp4_url = models.CharField(
+        verbose_name="DHCPv4 Server URL", null=True, blank=True, max_length=255
+    )
+    dhcp6_url = models.CharField(
+        verbose_name="DHCPv6 Server URL", null=True, blank=True, max_length=255
+    )
     username = models.CharField(null=True, blank=True, max_length=255)
     password = models.CharField(null=True, blank=True, max_length=255)
     ssl_verify = models.BooleanField(
@@ -41,8 +47,6 @@ class Server(NetBoxModel):
         verbose_name="CA File Path",
         help_text="The specific CA certificate file to use for SSL verification.",
     )
-    dhcp6 = models.BooleanField(verbose_name="DHCPv6", default=True)
-    dhcp4 = models.BooleanField(verbose_name="DHCPv4", default=True)
 
     class Meta:
         ordering = ("name",)
@@ -53,9 +57,13 @@ class Server(NetBoxModel):
     def get_absolute_url(self):
         return reverse("plugins:netbox_kea:server", args=[self.pk])
 
-    def get_client(self) -> KeaClient:
+    def get_client(self, version: Literal[4, 6]) -> KeaClient | None:
+        url = self.dhcp4_url if version == 4 else self.dhcp6_url
+        if url is None:
+            return None
+
         return KeaClient(
-            url=self.server_url,
+            url=url,
             username=self.username,
             password=self.password,
             verify=self.ca_file_path or self.ssl_verify,
@@ -67,9 +75,9 @@ class Server(NetBoxModel):
     def clean(self) -> None:
         super().clean()
 
-        if self.dhcp4 is False and self.dhcp6 is False:
+        if self.dhcp4_url is None and self.dhcp6_url is None:
             raise ValidationError(
-                {"dhcp6": "At one of DHCPv4 and DHCPv6 needs to be enabled."}
+                {"dhcp6_url": "At one DHCPv4 URL or DHCPv6 URL needs to be provided."}
             )
 
         if (self.client_cert_path and not self.client_key_path) or (
@@ -97,20 +105,19 @@ class Server(NetBoxModel):
                 }
             )
 
-        client = self.get_client()
-        if self.dhcp6:
+        if client6 := self.get_client(6):
             try:
-                client.command("version-get", service=["dhcp6"])
+                client6.command("version-get")
             except Exception as e:
                 raise ValidationError(
-                    {"dhcp6": f"Unable to get DHCPv6 version: {repr(e)}"}
+                    {"dhcp6_url": f"Unable to get DHCPv6 version: {repr(e)}"}
                 ) from e
-        if self.dhcp4:
+        if client4 := self.get_client(4):
             try:
-                client.command("version-get", service=["dhcp4"])
+                client4.command("version-get")
             except Exception as e:
                 raise ValidationError(
-                    {"dhcp4": f"Unable to get DHCPv4 version: {repr(e)}"}
+                    {"dhcp4_url": f"Unable to get DHCPv4 version: {repr(e)}"}
                 ) from e
 
     def to_objectchange(self, action: str) -> None:

@@ -41,14 +41,10 @@ class KeaClient:
     def command(
         self,
         command: str,
-        service: list[str] | None = None,
         arguments: dict[str, Any] | None = None,
         check: None | Sequence[int] = (0,),
     ) -> list[KeaResponse]:
         body: dict[str, Any] = {"command": command}
-
-        if service is not None:
-            body["service"] = service
 
         if arguments is not None:
             body["arguments"] = arguments

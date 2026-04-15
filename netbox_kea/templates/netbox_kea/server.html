@@ -12,16 +12,12 @@
               <td>{{ object.name }}</td>
             </tr>
             <tr>
-              <th scope="row">Server URL</th>
-              <td>{{ object.server_url }}</td>
+              <th scope="row">DHCPv6 Server URL</th>
+              <td>{{ object.dhcp6_url }}</td>
             </tr>
             <tr>
-              <th scope="row">DHCPv6</th>
-              <td>{% checkmark object.dhcp6 %}</td>
-            </tr>
-            <tr>
-              <th scope="row">DHCPv4</th>
-              <td>{% checkmark object.dhcp4 %}</td>
+              <th scope="row">DHCPv4 Server URL</th>
+              <td>{{ object.dhcp4_url }}</td>
             </tr>
           </table>
         </div>
