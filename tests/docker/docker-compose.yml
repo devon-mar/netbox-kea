@@ -63,19 +63,6 @@ services:
       timeout: 3s
       interval: 15s
       test: "ps -aux | grep -v grep | grep -q rqworker || exit 1"
-  netbox-housekeeping:
-    <<: *netbox
-    depends_on:
-      netbox:
-        condition: service_healthy
-    ports: []
-    command:
-      - /opt/netbox/housekeeping.sh
-    healthcheck:
-      start_period: 20s
-      timeout: 3s
-      interval: 15s
-      test: "ps -aux | grep -v grep | grep -q housekeeping || exit 1"
 
   # postgres
   postgres:
