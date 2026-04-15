@@ -1,7 +1,7 @@
 import inspect
 import logging
 from abc import ABCMeta
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
@@ -18,7 +18,7 @@ from utilities.views import GetReturnURLMixin, ViewTab, register_model_view
 
 from . import constants, forms, tables
 from .filtersets import ServerFilterSet
-from .kea import KeaClient
+from .kea import KeaClient, KeaResponse
 from .models import Server
 from .utilities import (
     OptionalViewTab,
@@ -86,31 +86,45 @@ class ServerStatusView(generic.ObjectView):
         }
 
     def _get_dhcp_status(
-        self, server: Server, client: KeaClient
+        self,
+        server: Server,
     ) -> dict[str, dict[str, Any]]:
         resp: dict[str, dict[str, Any]] = {}
 
-        # Map of name to pretty name
-        service_names = {"dhcp6": "DHCPv6", "dhcp4": "DHCPv4"}
-        services = []
-        if server.dhcp6:
-            services.append("dhcp6")
-        if server.dhcp4:
-            services.append("dhcp4")
-        service_keys = list(services)
+        dhcp_statuses: list[
+            tuple[Literal[4, 6], list[KeaResponse], list[KeaResponse]]
+        ] = []
 
-        dhcp_status = client.command("status-get", service=service_keys)
-        dhcp_version = client.command("version-get", service=service_keys)
-        assert len(dhcp_status) == len(services)
-        assert len(dhcp_version) == len(services)
-        for svc, status, version in zip(services, dhcp_status, dhcp_version):
-            args = status["arguments"]
+        if client6 := server.get_client(6):
+            dhcp_statuses.append(
+                (
+                    6,
+                    client6.command("status-get"),
+                    client6.command("version-get"),
+                )
+            )
+
+        if client4 := server.get_client(4):
+            dhcp_statuses.append(
+                (
+                    4,
+                    client4.command("status-get"),
+                    client4.command("version-get"),
+                )
+            )
+
+        for dhcp_version, status, version in dhcp_statuses:
+            assert len(status) == 1
+            args = status[0]["arguments"]
             assert args is not None
 
-            version_args = version["arguments"]
+            assert len(version) == 1
+            version_args = version[0]["arguments"]
             assert version_args is not None
 
-            resp[service_names[svc]] = {
+            service_name = f"DHCPv{dhcp_version}"
+
+            resp[service_name] = {
                 "PID": args["pid"],
                 "Uptime": format_duration(args["uptime"]),
                 "Time since reload": format_duration(int(args["reload"])),
@@ -125,7 +139,7 @@ class ServerStatusView(generic.ObjectView):
                 ha_servers = ha[0].get("ha-servers")
                 ha_local = ha_servers.get("local", {})
                 ha_remote = ha_servers.get("remote", {})
-                resp[service_names[svc]].update(
+                resp[service_name].update(
                     {
                         "HA mode": ha[0].get("ha-mode"),
                         "HA local role": ha_local.get("role"),
@@ -148,18 +162,10 @@ class ServerStatusView(generic.ObjectView):
                 )
         return resp
 
-    def _get_statuses(
-        self, server: Server, client: KeaClient
-    ) -> dict[str, dict[str, Any]]:
-        return {
-            "Control Agent": self._get_ca_status(client),
-            **self._get_dhcp_status(server, client),
-        }
-
     def get_extra_context(
         self, request: HttpResponse, instance: Server
     ) -> dict[str, Any]:
-        return {"statuses": self._get_statuses(instance, instance.get_client())}
+        return {"statuses": self._get_dhcp_status(instance)}
 
 
 class BaseServerLeasesView(generic.ObjectView, Generic[T]):
@@ -192,7 +198,6 @@ class BaseServerLeasesView(generic.ObjectView, Generic[T]):
 
         resp = client.command(
             f"lease{self.dhcp_version}-get-page",
-            service=[f"dhcp{self.dhcp_version}"],
             arguments={"from": frm, "limit": per_page},
             check=(0, 3),
         )
@@ -245,7 +250,6 @@ class BaseServerLeasesView(generic.ObjectView, Generic[T]):
             raise AbortRequest(f"Invalid search by (this shouldn't happen): {by}")
         resp = client.command(
             f"lease{self.dhcp_version}-get{command}",
-            service=[f"dhcp{self.dhcp_version}"],
             arguments=arguments,
             check=(0, 3),
         )
@@ -278,7 +282,7 @@ class BaseServerLeasesView(generic.ObjectView, Generic[T]):
 
         by = form.cleaned_data["by"]
         q = form.cleaned_data["q"]
-        client = instance.get_client()
+        client = instance.get_client(self.dhcp_version)
         if by == constants.BY_SUBNET:
             leases = []
             page: str | None = ""  # start from the beginning
@@ -329,7 +333,8 @@ class BaseServerLeasesView(generic.ObjectView, Generic[T]):
 
             by = form.cleaned_data["by"]
             q = form.cleaned_data["q"]
-            client = instance.get_client()
+            client = instance.get_client(self.dhcp_version)
+            assert client is not None, "TODO"
             if by == "subnet":
                 leases, next_page = self.get_leases_page(
                     client,
@@ -381,7 +386,7 @@ class BaseServerLeasesView(generic.ObjectView, Generic[T]):
 @register_model_view(Server, "leases6")
 class ServerLeases6View(BaseServerLeasesView[tables.LeaseTable6]):
     tab = OptionalViewTab(
-        label="DHCPv6 Leases", weight=1010, is_enabled=lambda s: s.dhcp6
+        label="DHCPv6 Leases", weight=1010, is_enabled=lambda s: s.dhcp6_url is not None
     )
     form = forms.Leases6SearchForm
     table = tables.LeaseTable6
@@ -391,7 +396,7 @@ class ServerLeases6View(BaseServerLeasesView[tables.LeaseTable6]):
 @register_model_view(Server, "leases4")
 class ServerLeases4View(BaseServerLeasesView[tables.LeaseTable4]):
     tab = OptionalViewTab(
-        label="DHCPv4 Leases", weight=1020, is_enabled=lambda s: s.dhcp4
+        label="DHCPv4 Leases", weight=1020, is_enabled=lambda s: s.dhcp4_url is not None
     )
     form = forms.Leases4SearchForm
     table = tables.LeaseTable4
@@ -417,7 +422,6 @@ class BaseServerLeasesDeleteView(
         client.command(
             f"lease{self.dhcp_version}-del",
             arguments={"ip-address": ip},
-            service=[f"dhcp{self.dhcp_version}"],
             check=(0, 3),
         )
 
@@ -426,6 +430,10 @@ class BaseServerLeasesDeleteView(
 
     def post(self, request: HttpRequest, **kwargs) -> HttpResponse:
         instance: Server = self.get_object(**kwargs)
+        client = instance.get_client(self.dhcp_version)
+        if client is None:
+            messages.error(request, f"DHCPv{self.dhcp_version} is not enabled.")
+            return redirect(self.get_return_url(request, obj=instance))
 
         if not request.user.has_perm(
             "netbox_kea.bulk_delete_lease_from_server", obj=instance
@@ -455,8 +463,6 @@ class BaseServerLeasesDeleteView(
                     "return_url": self.get_return_url(request, obj=instance),
                 },
             )
-
-        client = instance.get_client()
 
         for ip in lease_ips:
             try:
@@ -492,8 +498,10 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
         return self.get_subnets(parent)
 
     def get_subnets(self, server: Server) -> list[dict[str, Any]]:
-        client = server.get_client()
-        config = client.command("config-get", service=[f"dhcp{self.dhcp_version}"])
+        client = server.get_client(self.dhcp_version)
+        assert client is not None, "TODO"
+
+        config = client.command("config-get")
         assert config[0]["arguments"] is not None
         subnets = config[0]["arguments"][f"Dhcp{self.dhcp_version}"][
             f"subnet{self.dhcp_version}"
@@ -571,7 +579,9 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
 @register_model_view(Server, "subnets6")
 class ServerDHCP6SubnetsView(BaseServerDHCPSubnetsView):
     tab = OptionalViewTab(
-        label="DHCPv6 Subnets", weight=1030, is_enabled=lambda s: s.dhcp6
+        label="DHCPv6 Subnets",
+        weight=1030,
+        is_enabled=lambda s: s.dhcp6_url is not None,
     )
     dhcp_version = 6
 
@@ -579,6 +589,8 @@ class ServerDHCP6SubnetsView(BaseServerDHCPSubnetsView):
 @register_model_view(Server, "subnets4")
 class ServerDHCP4SubnetsView(BaseServerDHCPSubnetsView):
     tab = OptionalViewTab(
-        label="DHCPv4 Subnets", weight=1040, is_enabled=lambda s: s.dhcp4
+        label="DHCPv4 Subnets",
+        weight=1040,
+        is_enabled=lambda s: s.dhcp4_url is not None,
     )
     dhcp_version = 4
