@@ -563,6 +563,7 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
                 "table": table,
                 "table_config": f"{table.name}_config",
                 "return_url": request.get_full_path(),
+                "tab": self.tab,
             },
         )
 
