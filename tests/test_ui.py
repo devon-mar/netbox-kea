@@ -492,8 +492,12 @@ def _version_ge_43(page: Page) -> bool:
 def configure_table(page: Page, *selected_coumns: str) -> None:
     page.get_by_role("button", name=re.compile("Configure Table")).click()
 
-    # Clear all selected columns
+    # Wait for modal to be visible. Otherwise, selected_count might
+    # be wrong.
     remove_button = page.get_by_text("Remove")
+    expect(remove_button).to_be_visible()
+
+    # Clear all selected columns
     selected_count = page.locator("#id_columns > option").count()
     for i in range(selected_count):
         page.locator("#id_columns > option").first.click()
