@@ -1,5 +1,6 @@
+from typing import Any
+
 import django_tables2 as tables
-from django.urls import reverse
 from django.utils.http import urlencode
 from netbox.tables import BaseTable, NetBoxTable, ToggleColumn, columns
 
@@ -137,10 +138,7 @@ class SubnetTable(GenericTable):
     subnet = tables.Column(
         linkify=lambda record, table: (
             (
-                reverse(
-                    f"plugins:netbox_kea:server_leases{record['dhcp_version']}",
-                    args=[record["server_pk"]],
-                )
+                table.server_url
                 + "?"
                 + urlencode({"by": "subnet", "q": record["subnet"]})
             )
@@ -155,6 +153,12 @@ class SubnetTable(GenericTable):
         empty_text = "No subnets"
         fields = ("id", "subnet", "shared_network", "actions")
         default_columns = ("id", "subnet", "shared_network")
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        # This must be set before rendering.
+        self.server_url: str | None = None
 
 
 class BaseLeaseTable(GenericTable):

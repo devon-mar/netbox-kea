@@ -501,33 +501,17 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
         client = server.get_client(self.dhcp_version)
         assert client is not None, "TODO"
 
-        config = client.command("config-get")
+        config = client.command(f"subnet{self.dhcp_version}-list")
         assert config[0]["arguments"] is not None
-        subnets = config[0]["arguments"][f"Dhcp{self.dhcp_version}"][
-            f"subnet{self.dhcp_version}"
-        ]
+        subnets = config[0]["arguments"]["subnets"]
         subnet_list = [
             {
                 "id": s["id"],
                 "subnet": s["subnet"],
-                "dhcp_version": self.dhcp_version,
-                "server_pk": server.pk,
+                "shared_network": s["shared-network-name"],
             }
             for s in subnets
-            if "id" in s and "subnet" in s
         ]
-
-        for sn in config[0]["arguments"][f"Dhcp{self.dhcp_version}"]["shared-networks"]:
-            subnet_list.extend(
-                {
-                    "id": s["id"],
-                    "subnet": s["subnet"],
-                    "shared_network": sn["name"],
-                    "dhcp_version": self.dhcp_version,
-                    "server_pk": server.pk,
-                }
-                for s in sn[f"subnet{self.dhcp_version}"]
-            )
 
         return subnet_list
 
@@ -542,6 +526,10 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
 
         table_data = self.prep_table_data(request, child_objects, instance)
         table = self.get_table(table_data, request, False)
+        table.server_url = reverse(
+            f"plugins:netbox_kea:server_leases{self.dhcp_version}",
+            args=[instance.pk],
+        )
 
         if "export" in request.GET:
             return export_table(
