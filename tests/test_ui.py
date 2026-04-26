@@ -44,34 +44,42 @@ def reset_user_preferences(nb_http: requests.Session, nb_api: pynetbox.api) -> N
 
 @pytest.fixture
 def with_test_server(
-    nb_api: pynetbox.api, kea_url: str, page: Page, netbox_login: None, plugin_base: str
+    nb_api: pynetbox.api,
+    page: Page,
+    netbox_login: None,
 ):
-    server = nb_api.plugins.kea.servers.create(name="test", server_url=kea_url)
-    page.goto(f"{plugin_base}/servers/{server.id}/")
+    server = nb_api.plugins.kea.servers.create(
+        name="test", server_url=constants.KEA_URL
+    )
+    page.goto(f"{constants.PLUGIN_BASE_URL}/servers/{server.id}/")
     yield
     server.delete()
 
 
 @pytest.fixture
 def with_test_server_only6(
-    nb_api: pynetbox.api, kea_url: str, page: Page, netbox_login: None, plugin_base: str
+    nb_api: pynetbox.api,
+    page: Page,
+    netbox_login: None,
 ):
     server = nb_api.plugins.kea.servers.create(
-        name="only6", server_url=kea_url, dhcp4=False, dhcp6=True
+        name="only6", server_url=constants.KEA_URL, dhcp4=False, dhcp6=True
     )
-    page.goto(f"{plugin_base}/servers/{server.id}/")
+    page.goto(f"{constants.PLUGIN_BASE_URL}/servers/{server.id}/")
     yield
     server.delete()
 
 
 @pytest.fixture
 def with_test_server_only4(
-    nb_api: pynetbox.api, kea_url: str, page: Page, netbox_login: None, plugin_base: str
+    nb_api: pynetbox.api,
+    page: Page,
+    netbox_login: None,
 ):
     server = nb_api.plugins.kea.servers.create(
-        name="only4", server_url=kea_url, dhcp4=True, dhcp6=False
+        name="only4", server_url=constants.KEA_URL, dhcp4=True, dhcp6=False
     )
-    page.goto(f"{plugin_base}/servers/{server.id}/")
+    page.goto(f"{constants.PLUGIN_BASE_URL}/servers/{server.id}/")
     yield
     server.delete()
 
@@ -84,11 +92,6 @@ def kea_client() -> KeaClient:
 @pytest.fixture
 def kea(with_test_server: None, kea_client: KeaClient) -> KeaClient:
     return kea_client
-
-
-@pytest.fixture
-def plugin_base(netbox_url: str) -> str:
-    return f"{netbox_url}/plugins/kea"
 
 
 @pytest.fixture
@@ -366,7 +369,6 @@ def netbox_user_permissions() -> list[dict[str, list[Any]]]:
 @pytest.fixture(scope="function", autouse=True)
 def netbox_login(
     page: Page,
-    netbox_url: str,
     netbox_username: str,
     netbox_password: str,
     netbox_user_permissions: list[dict[str, list[Any]]],
@@ -389,7 +391,7 @@ def netbox_login(
             )
             to_delete.append(p)
 
-    page.goto(f"{netbox_url}/login/")
+    page.goto(f"{constants.NETBOX_URL}/login/")
     page.get_by_label("Username").fill(netbox_username)
     page.get_by_label("Password").fill(netbox_password)
     page.get_by_role("button", name="Sign In").click()
@@ -578,11 +580,9 @@ def test_navigation_add_no_access(page: Page) -> None:
     expect(page.get_by_role("link", name="󱇬", exact=True)).to_have_count(0)
 
 
-def test_server_add_delete(
-    page: Page, plugin_base: str, kea_url: str, nb_api: pynetbox.api
-) -> None:
+def test_server_add_delete(page: Page, nb_api: pynetbox.api) -> None:
     server_name = "test_server"
-    page.goto(f"{plugin_base}/servers/add/")
+    page.goto(f"{constants.PLUGIN_BASE_URL}/servers/add/")
     expect(page).to_have_title(re.compile("^Add a new server.*"))
 
     expect(page.get_by_label("Password", exact=True)).to_have_attribute(
@@ -590,7 +590,7 @@ def test_server_add_delete(
     )
 
     page.get_by_label("Name", exact=True).fill(server_name)
-    page.get_by_label("Server URL", exact=True).fill(kea_url)
+    page.get_by_label("Server URL", exact=True).fill(constants.KEA_URL)
     page.get_by_role("button", name="Create", exact=True).click()
 
     expect(page).to_have_title(re.compile(f"^{server_name}"))
@@ -604,17 +604,15 @@ def test_server_add_delete(
     assert server is None
 
 
-def test_server_bulk_delete(
-    page: Page, plugin_base: str, nb_api: pynetbox.api, kea_url: str
-):
+def test_server_bulk_delete(page: Page, nb_api: pynetbox.api):
     nb_api.plugins.kea.servers.create(
         [
-            {"name": "server1", "server_url": kea_url},
-            {"name": "server2", "server_url": kea_url},
+            {"name": "server1", "server_url": constants.KEA_URL},
+            {"name": "server2", "server_url": constants.KEA_URL},
         ]
     )
 
-    page.goto(f"{plugin_base}/servers/")
+    page.goto(f"{constants.PLUGIN_BASE_URL}/servers/")
     page.get_by_role("checkbox", name="Toggle All").click()
     page.get_by_role("button", name="Delete Selected").click()
     page.locator('button.btn-danger[type="submit"]').click()
@@ -1357,7 +1355,6 @@ def test_lease_search_by_subnet(
 def test_lease_search_by_subnet_invalid_page(
     page: Page,
     kea: KeaClient,
-    plugin_base: str,
     family: Literal[6, 4],
     subnet_page: str,
 ) -> None:
@@ -1400,15 +1397,13 @@ def test_lease_search_page_param_without_subnet(
 def test_filter_servers_by_tag(
     nb_api: pynetbox.api,
     test_tag: str,
-    kea_url: str,
-    plugin_base: str,
     page: Page,
 ) -> None:
     nb_api.plugins.kea.servers.create(
-        name="tag-test", server_url=kea_url, tags=[{"name": test_tag}]
+        name="tag-test", server_url=constants.KEA_URL, tags=[{"name": test_tag}]
     )
 
-    page.goto(f"{plugin_base}/servers/")
+    page.goto(f"{constants.PLUGIN_BASE_URL}/servers/")
     page.get_by_role("tab", name="Filters").click()
     page.locator("#id_tag + div.form-select").click()
     page.locator("#id_tag-ts-dropdown").get_by_role(
