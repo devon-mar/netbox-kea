@@ -24,10 +24,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - netbox: v4.0
-          - netbox: v4.1
-          - netbox: v4.2
-          - netbox: v4.3
           - netbox: v4.4
           - netbox: v4.5
 
