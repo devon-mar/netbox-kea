@@ -481,22 +481,6 @@ def expect_form_error_search(page: Page, b: bool) -> None:
     expect(page.locator("#id_q + div.form-text.text-danger")).to_have_count(int(b))
 
 
-def _version_ge_43(page: Page) -> bool:
-    """
-    Return True if the version is >= 4.3.
-    """
-
-    old_version_strings = (
-        "(v4.0.11)",
-        '<li class="list-inline-item">NetBox Community v4.1.11</li>',
-        "NetBox Community v4.2",
-    )
-
-    content = page.content()
-
-    return not any(s in content for s in old_version_strings)
-
-
 def configure_table(page: Page, *selected_coumns: str) -> None:
     page.get_by_role("button", name=re.compile("Configure Table")).click()
 
@@ -874,10 +858,7 @@ def test_dhcp_lease_all_columns(
             "expires_in",
             "iaid",
         )
-        # NetBox v4.3 removes the query when saving the table config.
-        # See table tableConfig.ts in https://github.com/netbox-community/netbox/pull/19284.
-        if _version_ge_43(page):
-            search()
+        search()
 
         def check():
             cltt = datetime.fromtimestamp(lease["cltt"], timezone.utc)
@@ -913,8 +894,7 @@ def test_dhcp_lease_all_columns(
             "expires_in",
             "client_id",
         )
-        if _version_ge_43(page):
-            search()
+        search()
 
         def check():
             cltt = datetime.fromtimestamp(lease["cltt"], timezone.utc)
@@ -1003,8 +983,7 @@ def test_dhcp_export_csv_all(
 
     search()
     configure_table(page, "ip_address", "hostname", "subnet_id")
-    if _version_ge_43(page):
-        search()
+    search()
 
     page.get_by_role("button", name="Export").click()
     with page.expect_download() as dl:
@@ -1570,8 +1549,7 @@ def test_dhcpv6_lease_long_duid(
         "hostname",
         "hw_address",
     )
-    if _version_ge_43(page):
-        search()
+    search()
 
     # The last column should not be off the page.
     expect(page.locator("table.object-list > tbody > tr > td").last).to_be_in_viewport()

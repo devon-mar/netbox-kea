@@ -1,4 +1,3 @@
-import inspect
 import logging
 from abc import ABCMeta
 from typing import Any, Generic, Literal, TypeVar
@@ -29,9 +28,6 @@ from .utilities import (
 )
 
 T = TypeVar("T", bound=BaseTable)
-
-# See BaseServerLeasesView.get_table.
-_TABLE_USER_ARG = "user" in inspect.signature(BaseTable).parameters
 
 
 @register_model_view(Server)
@@ -174,15 +170,7 @@ class BaseServerLeasesView(generic.ObjectView, Generic[T]):
     table: type[T]
 
     def get_table(self, data: list[dict[str, Any]], request: HttpRequest) -> T:
-        table_kwargs = {}
-        if _TABLE_USER_ARG:
-            # The user arg is used by NetBox <4.3 to configure the table.
-            # It is available in 4.3, 4.4 and certain 4.5 versions
-            # but is not used. Configuring the table in these versions
-            # is done by .configure.
-            table_kwargs["user"] = request.user
-
-        table = self.table(data, **table_kwargs)
+        table = self.table(data)
         table.configure(request)
         return table
 
