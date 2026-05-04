@@ -21,10 +21,6 @@ This plugin allows you to view Kea status, leases and subnets in NetBox. Go dire
 
 - Searching for leases by subnet ID does not support pagination. This may be an expensive operation depending on the subnet size.
 
-- Kea doesn't provide a way to get a list of subnets without an additional hook library.
-  Thus, this plugin lists subnets using the `config-get` command. This means that the entire config will be fetched just to get the configured subnets!
-  This may be an expensive operation.
-
 ## Requirements
 
 - NetBox 4.4 or 4.5
