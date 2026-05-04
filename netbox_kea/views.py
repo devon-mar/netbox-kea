@@ -322,7 +322,9 @@ class BaseServerLeasesView(generic.ObjectView, Generic[T]):
             by = form.cleaned_data["by"]
             q = form.cleaned_data["q"]
             client = instance.get_client(self.dhcp_version)
-            assert client is not None, "TODO"
+            assert client is not None, (
+                "check_dhcp_enabled verified that there is a DHCP URL"
+            )
             if by == "subnet":
                 leases, next_page = self.get_leases_page(
                     client,
@@ -487,7 +489,9 @@ class BaseServerDHCPSubnetsView(generic.ObjectChildrenView):
 
     def get_subnets(self, server: Server) -> list[dict[str, Any]]:
         client = server.get_client(self.dhcp_version)
-        assert client is not None, "TODO"
+        assert client is not None, (
+            "check_dhcp_enabled verified that there is a DHCP URL"
+        )
 
         config = client.command(f"subnet{self.dhcp_version}-list")
         assert config[0]["arguments"] is not None

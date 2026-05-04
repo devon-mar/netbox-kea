@@ -143,8 +143,7 @@ def test_graphql(nb_api: pynetbox.api, nb_http: requests.Session):
         pytest.param(
             {
                 "name": "cert-no-key",
-                # TODO
-                "dhcp4_url": "http://kea-dhcp4:8000",
+                "dhcp4_url": constants.KEA4_URL,
                 "client_cert_path": "/root/mycert.crt",
             },
             id="client-cert-no-key",
