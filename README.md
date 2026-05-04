@@ -24,7 +24,6 @@ This plugin allows you to view Kea status, leases and subnets in NetBox. Go dire
 ## Requirements
 
 - NetBox 4.4 or 4.5
-- [Kea Control Agent](https://kea.readthedocs.io/en/latest/arm/agent.html)
 - [`libdhcp_lease_cmds.so`](https://kea.readthedocs.io/en/latest/arm/hooks.html#libdhcp-lease-cmds-so-lease-commands-for-easier-lease-management) hook library
 - [`libdhcp_subnet_cmds.so`](https://kea.readthedocs.io/en/latest/arm/hooks.html#libdhcp-subnet-cmds-so-subnet-commands-to-manage-subnets-and-shared-networks) hook library
 
