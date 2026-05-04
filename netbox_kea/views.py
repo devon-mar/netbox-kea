@@ -442,7 +442,7 @@ class BaseServerLeasesDeleteView(
         if "_confirm" not in request.POST:
             return render(
                 request,
-                "generic/bulk_delete.html",
+                "netbox_kea/leases_bulk_delete.html",
                 {
                     "model": FakeLeaseModel,
                     "table": tables.LeaseDeleteTable(

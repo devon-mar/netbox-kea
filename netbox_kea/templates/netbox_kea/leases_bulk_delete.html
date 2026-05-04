@@ -1,0 +1,11 @@
+{% extends "generic/bulk_delete.html" %}
+
+{% block head %}
+  {{ block.super }}
+  <style type="text/css">
+    #delete-form form div.bg-primary-subtle {
+      display: none;
+    }
+  </style>
+
+{% endblock %}

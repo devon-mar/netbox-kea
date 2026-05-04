@@ -1022,7 +1022,11 @@ def test_lease_delete(
     url = page.url
 
     page.get_by_role("button", name="Delete Selected").click()
-    page.locator('button[name="_confirm"]').click()
+    expect(
+        page.get_by_role("tabpanel", name="Bulk Delete").get_by_role("alert")
+    ).to_have_text(re.compile("The following operation will delete 1 leases."))
+    expect(page.locator("#delete-form form div.bg-primary-subtle")).not_to_be_visible()
+    page.get_by_role("button", name="Delete 1 leases").click()
     expect(page.locator(".toast-body")).to_have_text(
         re.compile(f"Deleted 1 DHCPv{family} lease\\(s\\)")
     )
