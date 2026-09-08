@@ -397,7 +397,7 @@ def netbox_login(
             )
             to_delete.append(p)
 
-    page.goto(f"{constants.NETBOX_URL}/login/")
+    page.goto(f"{constants.NETBOX_URL}/login/", timeout=60000)
     page.get_by_label("Username").fill(netbox_username)
     page.get_by_label("Password").fill(netbox_password)
     page.get_by_role("button", name="Sign In").click()
