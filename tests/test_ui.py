@@ -500,7 +500,7 @@ def configure_table(page: Page, *selected_coumns: str) -> None:
         page.get_by_text("Add", exact=True).click()
 
     with page.expect_navigation():
-        page.get_by_role("button", name="Save").click()
+        page.get_by_role("button", name=re.compile("Save|Apply")).click()
 
 
 @pytest.mark.parametrize(
@@ -515,7 +515,7 @@ def configure_table(page: Page, *selected_coumns: str) -> None:
     ],
 )
 def test_navigation_view(page: Page) -> None:
-    page.get_by_role("button", name="󰐱 Plugins").click()
+    page.get_by_role("button", name="Plugins").click()
     page.get_by_role("link", name="Servers").click()
 
     expect(page).to_have_title(re.compile("^Servers.*"))
@@ -533,9 +533,9 @@ def test_navigation_view(page: Page) -> None:
     ],
 )
 def test_navigation_add(page: Page) -> None:
-    page.get_by_role("button", name="󰐱 Plugins").click()
+    page.get_by_role("button", name="Plugins").click()
     page.get_by_role("link", name="Servers").hover()
-    page.get_by_role("link", name="󱇬", exact=True).click()
+    page.get_by_role("link", description="Add", exact=True).click()
 
     expect(page).to_have_title(re.compile("^Add a new server.*"))
 
@@ -551,7 +551,7 @@ def test_navigation_add(page: Page) -> None:
     ],
 )
 def test_navigation_view_no_access(page: Page) -> None:
-    expect(page.get_by_role("button", name="󰐱 Plugins")).to_have_count(0)
+    expect(page.get_by_role("button", name="Plugins")).to_have_count(0)
 
 
 @pytest.mark.parametrize(
@@ -565,9 +565,9 @@ def test_navigation_view_no_access(page: Page) -> None:
     ],
 )
 def test_navigation_add_no_access(page: Page) -> None:
-    page.get_by_role("button", name="󰐱 Plugins").click()
+    page.get_by_role("button", name="Plugins").click()
     page.get_by_role("link", name="Servers").hover()
-    expect(page.get_by_role("link", name="󱇬", exact=True)).to_have_count(0)
+    expect(page.get_by_role("link", description="Add", exact=True)).to_have_count(0)
 
 
 def test_server_add_delete(page: Page, nb_api: pynetbox.api) -> None:
