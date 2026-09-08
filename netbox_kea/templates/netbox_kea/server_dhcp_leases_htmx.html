@@ -1,5 +1,5 @@
 {% load form_helpers %}
-{% load helpers %}
+{% load get_key from helpers %}
 {% load render_table from django_tables2 %}
 
 <div id="lease-search" hx-target="#lease-search" hx-swap="outerHTML" hx-push-url="true">
@@ -59,8 +59,8 @@
               <i class="mdi mdi-download"></i> Export
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="{% querystring request export="table" %}">Current View</a></li>
-              <li><a class="dropdown-item" href="{% querystring request export="" %}">All Data (CSV)</a></li>
+              <li><a class="dropdown-item" href="{% querystring export="table" %}">Current View</a></li>
+              <li><a class="dropdown-item" href="{% querystring export="" %}">All Data (CSV)</a></li>
             </ul>
           </div>
         </div>

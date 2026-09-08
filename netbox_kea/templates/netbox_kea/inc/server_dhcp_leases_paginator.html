@@ -1,4 +1,3 @@
-{% load helpers %}
 <div class="d-flex justify-content-between align-items-center border-{% if placement == "top" %}bottom{% else %}top{% endif %} p-2">
   {% if paginate %}
     <div>
@@ -6,7 +5,7 @@
         class="btn btn-sm btn-outline-secondary{% if not next_page %} disabled{% endif %}"
         role="button"
         {% if next_page %}
-        hx-get="{% querystring request page=next_page %}"
+        hx-get="{% querystring page=next_page %}"
         hx-indicator="#next-indicator"
         {% else %}
         aria-disabled="true"
@@ -26,7 +25,7 @@
       </button>
       <div class="dropdown-menu">
         {% for n in page_lengths %}
-          <a href="#" hx-get="{% querystring request per_page=n %}" class="dropdown-item">{{ n }}</a>
+          <a href="#" hx-get="{% querystring per_page=n %}" class="dropdown-item">{{ n }}</a>
         {% endfor %}
       </div>
     </div>
