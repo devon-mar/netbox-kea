@@ -625,7 +625,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "netaddr", specifier = ">=0.8,<2.0.0" },
-    { name = "requests", specifier = ">=2.34.0,<3.0.0" },
+    { name = "requests", specifier = ">=2.34.2,<3.0.0" },
 ]
 
 [package.metadata.requires-dev]
